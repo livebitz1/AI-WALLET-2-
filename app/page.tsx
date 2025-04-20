@@ -5,15 +5,24 @@ import { ChatInterface } from "@/components/ChatInterface";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { WalletButton } from "@/components/WalletButton";
 import { TokenDisplay } from "@/components/TokenDisplay";
-import { MarketTrends } from "@/components/MarketTrends"; // Import our new component
+import { MarketTrends } from "@/components/MarketTrends";
 import { HeroSection } from "@/components/HeroSection";
 import { FeatureShowcase } from "@/components/FeatureShowcase";
 import { SubscriptionCards } from "@/components/SubscriptionCards";
+import { SplashScreen } from "@/components/SplashScreen";
+import { QuickCommandBar } from "@/components/QuickCommandBar";
+import { CommandPalette } from "@/components/CommandPalette";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletStore } from "@/lib/wallet-store";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
+import { 
+  Search, Command, ArrowRight, Zap, Send, Wallet, ArrowLeftRight, 
+  Repeat, History, HelpCircle, DollarSign, Settings, BarChart2, 
+  PieChart, Loader, Info, AlertCircle, X, ChevronRight
+} from "lucide-react";
 
 export default function Home() {
   const { publicKey, connected } = useWallet();
@@ -22,13 +31,265 @@ export default function Home() {
   const sectionRefs = useRef<HTMLDivElement[]>([]);
   const [commandHover, setCommandHover] = useState(false);
   const pathname = usePathname();
+  
+  // States for splash screen
+  const [showSplash, setShowSplash] = useState(true);
 
-  // Animation timeline effects
+  // Enhanced Command Palette states
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [commandSearch, setCommandSearch] = useState("");
+  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
+  const commandInputRef = useRef<HTMLInputElement>(null);
+  const [recentCommands, setRecentCommands] = useState<string[]>(
+    typeof window !== 'undefined' ? 
+      JSON.parse(localStorage.getItem('recentCommands') || '[]') : []
+  );
+
+  // Command categories and commands
+  const commandCategories = [
+    {
+      name: "Wallet Operations",
+      icon: <Wallet className="w-5 h-5" />,
+      commands: [
+        { 
+          id: "check-balance", 
+          name: "Check balance", 
+          description: "View your current token holdings", 
+          icon: <DollarSign className="w-4 h-4" />,
+          shortcut: "Alt+B",
+          action: () => {
+            insertCommand("What's my balance?");
+            closeCommandPalette();
+          }
+        },
+        { 
+          id: "send-sol", 
+          name: "Send SOL", 
+          description: "Transfer SOL to another wallet", 
+          icon: <Send className="w-4 h-4" />,
+          action: () => {
+            insertCommand("Send 0.1 SOL to ");
+            closeCommandPalette();
+          }
+        },
+        { 
+          id: "swap-tokens", 
+          name: "Swap tokens", 
+          description: "Convert between different tokens", 
+          icon: <ArrowLeftRight className="w-4 h-4" />,
+          action: () => {
+            insertCommand("Swap 0.5 SOL to USDC");
+            closeCommandPalette();
+          }
+        },
+      ]
+    },
+    {
+      name: "Market Info",
+      icon: <BarChart2 className="w-5 h-5" />,
+      commands: [
+        { 
+          id: "token-price", 
+          name: "Check token price", 
+          description: "Get current price of any token", 
+          icon: <BarChart2 className="w-4 h-4" />,
+          action: () => {
+            insertCommand("What's the price of ");
+            closeCommandPalette();
+          }
+        },
+        { 
+          id: "market-trends", 
+          name: "Market trends", 
+          description: "Get overall crypto market analysis", 
+          icon: <PieChart className="w-4 h-4" />,
+          action: () => {
+            insertCommand("Show me market trends");
+            closeCommandPalette();
+          }
+        },
+        { 
+          id: "token-info", 
+          name: "Token information", 
+          description: "Get detailed info about a specific token", 
+          icon: <Info className="w-4 h-4" />,
+          action: () => {
+            insertCommand("Tell me about ");
+            closeCommandPalette();
+          }
+        },
+      ]
+    },
+    {
+      name: "History & Analytics",
+      icon: <History className="w-5 h-5" />,
+      commands: [
+        { 
+          id: "transaction-history", 
+          name: "Transaction history", 
+          description: "View your recent transactions", 
+          icon: <History className="w-4 h-4" />,
+          shortcut: "Alt+H",
+          action: () => {
+            insertCommand("Show my transaction history");
+            closeCommandPalette();
+          }
+        },
+        { 
+          id: "portfolio-performance", 
+          name: "Portfolio performance", 
+          description: "Analyze your portfolio growth", 
+          icon: <BarChart2 className="w-4 h-4" />,
+          action: () => {
+            insertCommand("How is my portfolio performing?");
+            closeCommandPalette();
+          }
+        },
+      ]
+    },
+    {
+      name: "Help & Settings",
+      icon: <HelpCircle className="w-5 h-5" />,
+      commands: [
+        { 
+          id: "help", 
+          name: "Get help", 
+          description: "Learn how to use the AI assistant", 
+          icon: <HelpCircle className="w-4 h-4" />,
+          shortcut: "Alt+/",
+          action: () => {
+            insertCommand("How do I use this wallet?");
+            closeCommandPalette();
+          }
+        },
+        { 
+          id: "settings", 
+          name: "Settings", 
+          description: "Configure wallet preferences", 
+          icon: <Settings className="w-4 h-4" />,
+          action: () => {
+            closeCommandPalette();
+          }
+        },
+        { 
+          id: "security-tips", 
+          name: "Security tips", 
+          description: "Best practices for wallet security", 
+          icon: <AlertCircle className="w-4 h-4" />,
+          action: () => {
+            insertCommand("Give me security tips for crypto wallets");
+            closeCommandPalette();
+          }
+        },
+      ]
+    }
+  ];
+
+  // Keyboard shortcuts for command palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+      }
+
+      if (e.key === 'Escape' && commandPaletteOpen) {
+        setCommandPaletteOpen(false);
+      }
+
+      if (commandPaletteOpen) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSelectedCommandIndex(prev => 
+            Math.min(prev + 1, getFilteredCommands().length - 1)
+          );
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSelectedCommandIndex(prev => Math.max(prev - 1, 0));
+        } else if (e.key === 'Enter' && selectedCommandIndex >= 0) {
+          e.preventDefault();
+          const commands = getFilteredCommands();
+          if (commands[selectedCommandIndex]) {
+            executeCommand(commands[selectedCommandIndex]);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [commandPaletteOpen, selectedCommandIndex, commandSearch]);
+
+  useEffect(() => {
+    if (commandPaletteOpen && commandInputRef.current) {
+      commandInputRef.current.focus();
+    }
+  }, [commandPaletteOpen]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && recentCommands.length > 0) {
+      localStorage.setItem('recentCommands', JSON.stringify(recentCommands));
+    }
+  }, [recentCommands]);
+
+  const getAllCommands = () => {
+    let allCommands: any[] = [];
+    commandCategories.forEach(category => {
+      allCommands = [...allCommands, ...category.commands];
+    });
+    return allCommands;
+  };
+
+  const getFilteredCommands = () => {
+    if (!commandSearch) return getAllCommands();
+    
+    return getAllCommands().filter(command => 
+      command.name.toLowerCase().includes(commandSearch.toLowerCase()) ||
+      command.description.toLowerCase().includes(commandSearch.toLowerCase())
+    );
+  };
+
+  const insertCommand = (command: string) => {
+    const chatInput = document.querySelector('textarea[placeholder*="Ask"]') as HTMLTextAreaElement;
+    if (chatInput) {
+      chatInput.value = command;
+      chatInput.focus();
+      
+      const event = new Event('input', { bubbles: true });
+      chatInput.dispatchEvent(event);
+    }
+  };
+
+  const executeCommand = (command: any) => {
+    setRecentCommands(prev => {
+      const filtered = prev.filter(item => item !== command.id);
+      return [command.id, ...filtered].slice(0, 5);
+    });
+    
+    if (command.action) command.action();
+  };
+
+  const closeCommandPalette = () => {
+    setCommandPaletteOpen(false);
+    setCommandSearch('');
+    setSelectedCommandIndex(0);
+  };
+
+  useEffect(() => {
+    if (!commandPaletteOpen) {
+      setCommandSearch('');
+      setSelectedCommandIndex(0);
+    }
+  }, [commandPaletteOpen]);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
 
-      // Animate sections as they come into view
       sectionRefs.current.forEach((ref) => {
         if (!ref) return;
 
@@ -45,22 +306,23 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/90">
-      {/* Animated background elements */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-grid-pattern opacity-5"></div>
 
         <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-primary/10 blur-3xl animate-float"></div>
         <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-accent/10 blur-3xl animate-float-delay"></div>
 
-        {/* 3D-like floating orbs */}
         <div className="orb orb-1"></div>
         <div className="orb orb-2"></div>
         <div className="orb orb-3"></div>
       </div>
 
-      {/* Header with animated reveal */}
       <header
         className={`sticky top-0 z-50 w-full border-b backdrop-blur-md transition-all duration-300 ${
           scrolled ? "border-border/60 bg-background/70" : "border-transparent bg-transparent"
@@ -75,10 +337,20 @@ export default function Home() {
           >
             <Link href="/" className="flex items-center space-x-2">
               <div className="relative w-8 h-8">
-                <div className="absolute inset-0 bg-primary rounded-full animate-pulse"></div>
-                <div className="absolute inset-1 bg-background rounded-full flex items-center justify-center">
-                  <span className="text-primary font-bold">AI</span>
-                </div>
+                <div className="absolute inset-0 bg-primary/30 rounded-full animate-pulse"></div>
+                <motion.div 
+                  className="absolute inset-0 flex items-center justify-center"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                >
+                  <Image 
+                    src="/logo.webp" 
+                    alt="AI Wallet Logo" 
+                    width={32} 
+                    height={32} 
+                    className="rounded-full object-cover z-10"
+                  />
+                </motion.div>
               </div>
               <h1 className="text-xl font-bold tracking-tight">
                 <span className="text-primary">AI</span> Wallet
@@ -86,8 +358,7 @@ export default function Home() {
             </Link>
           </motion.div>
 
-          {/* Navigation Links */}
-          <motion.nav 
+          <motion.nav
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
@@ -112,11 +383,18 @@ export default function Home() {
                 </span>
               </div>
             </NavLink>
+            <NavLink href="/twitter-feed" active={pathname === "/roadmap"}>
+              <div className="flex items-center">
+                <span className="mr-1.5">Twitter-Feed</span>
+                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary">
+                  New
+                </span>
+              </div>
+            </NavLink>
           </motion.nav>
-          
-          {/* Mobile Menu - Hamburger icon */}
+
           <div className="md:hidden flex items-center">
-            <Link 
+            <Link
               href="/roadmap"
               className="mr-4 px-3 py-1 text-sm rounded-full border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
             >
@@ -136,18 +414,12 @@ export default function Home() {
       </header>
 
       <main className="container px-4 py-6 mx-auto max-w-7xl">
-        {/* Hero section with 3D wallet visualization */}
         <HeroSection
           ref={(el) => el && (sectionRefs.current[0] = el)}
           walletConnected={connected}
         />
 
-        {/* Subscription Cards */}
-     
-
-        {/* Main interface container - restructured for optimal space usage */}
         <div className="my-12 grid grid-cols-12 gap-4">
-          {/* Left sidebar */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -192,11 +464,9 @@ export default function Home() {
               </div>
             )}
 
-            {/* Replace the hardcoded Market trends card with our new component */}
             <MarketTrends />
           </motion.div>
 
-          {/* Center panel - ChatInterface - This is where the AI functionality is */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -206,11 +476,9 @@ export default function Home() {
           >
             <div className="chat-interface h-full">
               <ChatInterface />
-              {/* Voice input button removed */}
             </div>
           </motion.div>
 
-          {/* Right sidebar */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -253,34 +521,13 @@ export default function Home() {
                 <WalletButton />
               </div>
             )}
-
-            {/* Quick actions card */}
-            <div className="rounded-xl border border-border/40 bg-card p-4 shadow-lg hover:shadow-xl transition-all">
-              <h3 className="text-base font-medium mb-3">Quick Actions</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {["Send", "Receive", "Swap", "Buy"].map((action, i) => (
-                  <button
-                    key={action}
-                    className="p-2 text-sm rounded-lg border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center"
-                  >
-                    <div className="w-6 h-6 mb-1 flex items-center justify-center text-primary">
-                      {i === 0 && <span>↗</span>}
-                      {i === 1 && <span>↘</span>}
-                      {i === 2 && <span>⇄</span>}
-                      {i === 3 && <span>$</span>}
-                    </div>
-                    {action}
-                  </button>
-                ))}
-              </div>
-            </div>
           </motion.div>
         </div>
 
-        {/* Feature showcase section */}
+        <QuickCommandBar />
+
         <FeatureShowcase ref={(el) => el && (sectionRefs.current[4] = el)} />
 
-        {/* Security section with subtle 3D rotation */}
         <section
           className="py-12 my-12 border-t border-b border-border/30"
           ref={(el) => el && (sectionRefs.current[5] = el)}
@@ -295,41 +542,36 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="perspective-container">
-            <div className="security-card">
-              <div className="grid md:grid-cols-3 gap-6">
-                {[
-                  {
-                    title: "Non-Custodial",
-                    description:
-                      "Your keys always stay safely in your wallet. We never have access to your funds.",
-                    icon: "🔐",
-                  },
-                  {
-                    title: "AI-Powered Safety",
-                    description:
-                      "Our AI verifies transactions match your intent and prevents malicious actions.",
-                    icon: "🛡️",
-                  },
-                  {
-                    title: "Transaction Preview",
-                    description:
-                      "Always see what you're sending before signing any transaction.",
-                    icon: "👁️",
-                  },
-                ].map((item, i) => (
-                  <div key={i} className="security-feature">
-                    <div className="text-4xl mb-4">{item.icon}</div>
-                    <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                    <p className="text-muted-foreground">{item.description}</p>
-                  </div>
-                ))}
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                title: "Non-Custodial",
+                description:
+                  "Your keys always stay safely in your wallet. We never have access to your funds.",
+                icon: "🔐",
+              },
+              {
+                title: "AI-Powered Safety",
+                description:
+                  "Our AI verifies transactions match your intent and prevents malicious actions.",
+                icon: "🛡️",
+              },
+              {
+                title: "Transaction Preview",
+                description:
+                  "Always see what you're sending before signing any transaction.",
+                icon: "👁️",
+              },
+            ].map((item, i) => (
+              <div key={i} className="security-feature">
+                <div className="text-4xl mb-4">{item.icon}</div>
+                <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                <p className="text-muted-foreground">{item.description}</p>
               </div>
-            </div>
+            ))}
           </div>
         </section>
 
-        {/* Testimonials section with floating cards */}
         <section
           className="py-12 my-12"
           ref={(el) => el && (sectionRefs.current[6] = el)}
@@ -365,16 +607,16 @@ export default function Home() {
                     "
                   </div>
                   <p className="mb-4 relative z-10">{testimonial.quote}</p>
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mr-3">
-                      {testimonial.name[0]}
-                    </div>
-                    <div>
-                      <p className="font-medium">{testimonial.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {testimonial.role}
-                      </p>
-                    </div>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mr-3">
+                    {testimonial.name[0]}
+                  </div>
+                  <div>
+                    <p className="font-medium">{testimonial.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {testimonial.role}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -382,7 +624,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Call to action */}
         <section
           className="py-16 my-12 text-center"
           ref={(el) => el && (sectionRefs.current[7] = el)}
@@ -390,7 +631,6 @@ export default function Home() {
           <div className="max-w-3xl mx-auto relative overflow-hidden rounded-2xl border border-primary/20 p-8 backdrop-blur-sm">
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/30 rounded-full blur-3xl"></div>
             <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-accent/30 rounded-full blur-3xl"></div>
-
             <h2 className="text-3xl font-bold mb-4 gradient-text">
               Experience the Future of Crypto
             </h2>
@@ -401,8 +641,8 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
               {!connected && <WalletButton />}
               <motion.button
-                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.05 }}
                 className="px-6 py-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all"
                 onClick={() =>
                   document
@@ -416,395 +656,54 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Add the diagnostics at the bottom of the page */}
-        <div className="mt-8">
-        </div>
+        <div className="mt-8"></div>
       </main>
 
-      {/* Command Menu */}
-      <motion.div 
+      <motion.div
         className="fixed bottom-6 right-6 z-50"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 1, duration: 0.3 }}
-        onHoverStart={() => setCommandHover(true)}
-        onHoverEnd={() => setCommandHover(false)}
       >
-        <motion.div
-          className="relative"
-          animate={{ width: commandHover ? "auto" : "auto" }}
+        <motion.button
+          className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:shadow-xl transition-all"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setCommandPaletteOpen(true)}
+          aria-label="Open command palette"
         >
-          {/* Command button */}
-          <motion.button 
-            className={`w-12 h-12 rounded-full ${
-              commandHover ? "bg-primary" : "bg-primary/80"
-            } text-primary-foreground flex items-center justify-center shadow-lg hover:shadow-xl transition-all`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-            </svg>
-          </motion.button>
-          
-          {/* Command menu */}
-          <motion.div 
-            className="absolute bottom-14 right-0 w-64 bg-card rounded-lg shadow-xl border border-border/50 backdrop-blur-sm overflow-hidden"
-            initial={{ opacity: 0, y: 10, height: 0 }}
-            animate={{ 
-              opacity: commandHover ? 1 : 0,
-              y: commandHover ? 0 : 10,
-              height: commandHover ? "auto" : 0,
-              pointerEvents: commandHover ? "auto" : "none"
-            }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="p-3 border-b border-border/50">
-              <h3 className="font-medium text-sm">Get Started</h3>
-            </div>
-            <div className="p-2">
-              {[
-                { command: "Check balance", description: "View your current tokens", icon: "💰" },
-                { command: "Send 0.01 SOL to address", description: "Transfer to another wallet", icon: "📤" },
-                { command: "Swap 0.1 SOLto USDC", description: "Swap the coins", icon: "📜" },
-                { command: "Get help", description: "Chat with AI assistant", icon: "🤖" },
-              ].map((item, i) => (
-                <motion.div 
-                  key={i}
-                  className="flex items-center p-2 hover:bg-primary/10 rounded-md cursor-pointer transition-colors"
-                  whileHover={{ x: 3 }}
-                  initial={{ opacity: 0, x: -5 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.05 * i }}
-                >
-                  <div className="w-8 h-8 mr-3 rounded-md bg-primary/10 flex items-center justify-center text-lg">
-                    {item.icon}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{item.command}</p>
-                    <p className="text-xs text-muted-foreground">{item.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            <div className="p-2 bg-muted/30 border-t border-border/50">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Press <kbd className="px-2 py-0.5 rounded bg-muted">?</kbd> for shortcuts</span>
-                <span>v1.0</span>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
+          <Command className="h-5 w-5" />
+        </motion.button>
       </motion.div>
 
-      {/* 3D Floating Icons - Fixed position - Performance Optimized */}
-      <div className="fixed right-4 top-1/4 hidden xl:block h-screen pointer-events-none">
-        <div className="relative h-full w-48">
-          {[
-            { icon: "₿", color: "bg-yellow-500/80", size: "w-12 h-12", delay: 0, path: [10, -20, 15] },
-            { icon: "Ξ", color: "bg-blue-500/80", size: "w-10 h-10", delay: 2, path: [-15, 25, -10] },
-            { icon: "◎", color: "bg-purple-500/80", size: "w-14 h-14", delay: 1, path: [5, -15, 20] },
-            { icon: "$", color: "bg-green-500/80", size: "w-8 h-8", delay: 3, path: [-20, 5, -25] },
-            { icon: "Ⓝ", color: "bg-red-500/80", size: "w-9 h-9", delay: 2.5, path: [25, -10, 5] },
-            { icon: "⟠", color: "bg-indigo-500/80", size: "w-11 h-11", delay: 1.5, path: [-5, 20, -15] }
-          ].map((item, i) => (
-            <motion.div
-              key={i}
-              className={`absolute ${item.size} rounded-full ${item.color} backdrop-blur-sm shadow-lg flex items-center justify-center text-white font-bold text-xl`}
-              style={{ 
-                willChange: "transform, opacity",
-                transform: "translate3d(0, 0, 0)", // Hardware acceleration
-                position: "absolute",
-                top: 50 + i * 60,
-                left: i % 2 === 0 ? 0 : 20
-              }}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{
-                opacity: 0.9,
-                scale: 1,
-                y: [item.path[0], item.path[1], item.path[0]],
-                x: [item.path[2], -item.path[2], item.path[2]],
-                rotateY: [0, 180, 360]
-              }}
-              transition={{
-                duration: 15,
-                repeat: Infinity,
-                repeatType: "reverse",
-                ease: "easeInOut",
-                delay: item.delay,
-                rotateY: {
-                  duration: 20,
-                  ease: "linear",
-                  repeat: Infinity
-                }
-              }}
-              aria-hidden="true"
-            >
-              {item.icon}
-            </motion.div>
-          ))}
-        </div>
-      </div>
+      <CommandPalette 
+        open={commandPaletteOpen}
+        onClose={closeCommandPalette}
+        commandCategories={commandCategories}
+        insertCommand={insertCommand}
+      />
 
-      {/* 3D Crypto Cards Floating - Performance Optimized */}
-      <div className="fixed right-0 bottom-1/3 hidden xl:block pointer-events-none">
-        <div className="relative h-96 w-40">
-          {[
-            { name: "SOL", bgClass: "bg-gradient-to-br from-purple-500/20 to-blue-500/20" },
-            { name: "USDC", bgClass: "bg-gradient-to-br from-blue-500/20 to-indigo-500/20" },
-            { name: "BTC", bgClass: "bg-gradient-to-br from-yellow-500/20 to-orange-500/20" }
-          ].map((coin, i) => (
-            <motion.div
-              key={i}
-              className={`absolute w-32 h-48 rounded-xl backdrop-blur-sm border border-white/10 shadow-xl overflow-hidden ${coin.bgClass}`}
-              style={{ 
-                willChange: "transform, opacity",
-                transform: "translate3d(0, 0, 0)", // Hardware acceleration
-                position: "absolute",
-                top: i * 60
-              }}
-              initial={{ 
-                opacity: 0, 
-                rotateY: 45,
-                x: 50
-              }}
-              animate={{
-                opacity: 0.8,
-                rotateY: [45, 25, 45],
-                rotateX: [15, 5, 15],
-                x: [50, 30, 50],
-                y: [0, 10, 0]
-              }}
-              transition={{
-                duration: 10,
-                repeat: Infinity,
-                repeatType: "reverse",
-                ease: "easeInOut",
-                delay: i * 1.5
-              }}
-              aria-hidden="true"
-            >
-              {/* Enhanced coin card design with holographic effects */}
-              <div className="p-4 h-full flex flex-col justify-between relative overflow-hidden group">
-                {/* Animated holographic background effect */}
-                <motion.div 
-                  className="absolute inset-0 opacity-30" 
-                  style={{
-                    background: 'linear-gradient(125deg, transparent 20%, rgba(255,255,255,0.4) 25%, transparent 30%)',
-                    backgroundSize: '200% 200%',
-                  }}
-                  animate={{
-                    backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                />
-
-                {/* Enhanced coin card content */}
-                <div className="flex justify-between items-start relative z-10">
-                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${
-                    coin.name === "SOL" ? "from-purple-500 to-violet-400" : 
-                    coin.name === "USDC" ? "from-blue-500 to-cyan-400" : 
-                    "from-yellow-500 to-amber-400"
-                  } flex items-center justify-center shadow-lg transform transition-all duration-300 group-hover:scale-110`}
-                  style={{ 
-                    boxShadow: '0 0 15px rgba(255,255,255,0.3)' 
-                  }}>
-                    {/* 3D embossed coin logo */}
-                    <span className="text-white font-bold" style={{ 
-                      textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-                      letterSpacing: '-0.5px' 
-                    }}>{coin.name.charAt(0)}</span>
-                    
-                    {/* Shine effect on the coin */}
-                    <motion.div
-                      className="absolute inset-0 rounded-full bg-gradient-to-br from-white/40 to-transparent"
-                      style={{ 
-                        clipPath: 'polygon(0 0, 100% 0, 70% 70%, 0 100%)',
-                        opacity: 0.6
-                      }}
-                      animate={{
-                        opacity: [0.6, 0.8, 0.6],
-                        rotate: [0, 5, 0]
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        repeatType: "reverse"
-                      }}
-                    />
-                  </div>
-
-                  {/* Enhanced coin name label */}
-                  <div className="flex flex-col items-end">
-                    <span className="text-xs font-medium text-white mb-1 tracking-wide">
-                      {coin.name}
-                    </span>
-                    <motion.span 
-                      className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                        i === 0 ? "bg-green-500/30 text-green-200" : 
-                        i === 1 ? "bg-blue-500/30 text-blue-200" : 
-                        "bg-yellow-500/30 text-yellow-200"
-                      }`}
-                      animate={{
-                        opacity: [0.7, 1, 0.7]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        repeatType: "reverse",
-                        delay: i * 0.5
-                      }}
-                    >
-                      {i === 0 ? "+4.2%" : i === 1 ? "-0.8%" : "+1.3%"}
-                    </motion.span>
-                  </div>
-                </div>
-                
-                {/* Enhanced price chart visualization */}
-                <div className="mt-auto relative z-10">
-                  {/* Fake candlestick chart */}
-                  <div className="h-10 w-full flex items-end space-x-0.5 mb-2 opacity-60">
-                    {[...Array(12)].map((_, idx) => {
-                      const height = 30 + Math.random() * 70;
-                      const isPositive = Math.random() > 0.4;
-                      return (
-                        <div 
-                          key={idx} 
-                          className="flex-1"
-                          style={{ height: `${height}%` }}
-                        >
-                          <motion.div
-                            className={`w-full h-full rounded-sm ${isPositive ? 'bg-green-500/70' : 'bg-red-500/70'}`}
-                            initial={{ scaleY: 0 }}
-                            animate={{ scaleY: 1 }}
-                            transition={{
-                              duration: 0.5,
-                              delay: 0.1 * idx + i,
-                              ease: "easeOut"
-                            }}
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
-                  
-                  {/* Enhanced progress bar with glow */}
-                  <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden relative">
-                    <motion.div 
-                      className={`h-full rounded-full ${
-                        coin.name === "SOL" ? "bg-purple-500/70" : 
-                        coin.name === "USDC" ? "bg-blue-500/70" : 
-                        "bg-yellow-500/70"
-                      }`}
-                      initial={{ width: "20%" }}
-                      animate={{ width: ["20%", "80%", "20%"] }}
-                      transition={{
-                        duration: 8,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* 3D Network Nodes Animation - Performance Optimized */}
-      <div className="fixed right-12 top-12 hidden 2xl:block">
-        <motion.div
-          className="w-48 h-48 relative"
-          style={{ 
-            willChange: "transform",
-            transform: "translate3d(0, 0, 0)" // Hardware acceleration
-          }}
-          animate={{ rotateY: 360 }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          aria-hidden="true"
-        >
-          {Array.from({ length: 6 }).map((_, i) => { // Reduced from 8 to 6 for performance
-            const angle = (i / 6) * Math.PI * 2;
-            const x = Math.cos(angle) * 60;
-            const y = Math.sin(angle) * 60;
-            return (
-              <motion.div
-                key={i}
-                className="absolute w-3 h-3 bg-primary/50 rounded-full"
-                style={{
-                  left: "50%",
-                  top: "50%",
-                  x,
-                  y,
-                  boxShadow: "0 0 10px rgba(255,255,255,0.2)",
-                  willChange: "transform, opacity"
-                }}
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.5, 0.8, 0.5]
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  repeatType: "reverse",
-                  ease: "easeInOut",
-                  delay: i * 0.3
-                }}
-              >
-                {/* Pre-determined connections instead of random ones */}
-                {i % 2 === 0 && (
-                  <motion.div
-                    className="absolute left-1/2 top-1/2 h-[1px] bg-primary/20 origin-left"
-                    style={{
-                      width: 60,
-                      rotate: `${(i + 1) * 60}deg`
-                    }}
-                    animate={{ opacity: [0.1, 0.5, 0.1] }}
-                    transition={{
-                      duration: 4,
-                      repeat: Infinity,
-                      repeatType: "reverse",
-                      ease: "easeInOut",
-                      delay: i * 0.5
-                    }}
-                  />
-                )}
-              </motion.div>
-            );
-          })}
-          <motion.div
-            className="absolute left-1/2 top-1/2 w-6 h-6 -ml-3 -mt-3 bg-primary/30 rounded-full"
-            style={{ willChange: "transform, box-shadow" }}
-            animate={{ 
-              scale: [1, 1.2, 1]
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              repeatType: "reverse",
-              ease: "easeInOut"
-            }}
-          />
-        </motion.div>
-      </div>
       <section className="py-16 my-8">
-          <SubscriptionCards />
-        </section>
+        <SubscriptionCards />
+      </section>
 
-      {/* Footer */}
       <footer className="border-t border-border/30 bg-background/50 backdrop-blur-sm">
         <div className="container px-4 py-8 mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-primary font-bold text-xs">AI</span>
+              <div className="relative w-6 h-6">
+                <motion.div 
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.7 }}
+                >
+                  <Image 
+                    src="/logo.webp" 
+                    alt="AI Wallet Logo" 
+                    width={24} 
+                    height={24} 
+                    className="rounded-full object-cover"
+                  />
+                </motion.div>
               </div>
               <p className="text-sm">© 2023 AI Wallet. All rights reserved.</p>
             </div>
@@ -829,15 +728,22 @@ export default function Home() {
   );
 }
 
-// NavLink component for consistent navigation styling
-function NavLink({ href, children, active = false }: { href: string; children: React.ReactNode; active?: boolean }) {
+function NavLink({
+  href,
+  children,
+  active = false,
+}: {
+  href: string;
+  children: React.ReactNode;
+  active?: boolean;
+}) {
   return (
     <Link href={href}>
       <motion.div
         className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
           active ? "text-primary" : "text-foreground hover:text-primary"
         }`}
-        whileHover={{ 
+        whileHover={{
           backgroundColor: "rgba(var(--primary), 0.08)",
         }}
       >

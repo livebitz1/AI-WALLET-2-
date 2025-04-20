@@ -390,10 +390,7 @@ export function ChatInterface() {
     } catch (error) {
       console.error("Error executing transfer:", error);
       
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: `❌ An error occurred during the transfer: ${error.message || "Unknown error"}`
-      }]);
+   
     } finally {
       setIsExecuting(false);
       setIsConfirmationOpen(false);
@@ -407,10 +404,7 @@ export function ChatInterface() {
     }
     
     // Add a pending message
-    setMessages(prev => [...prev, {
-      role: "assistant",
-      content: "Processing your transfer..."
-    }]);
+   
     
     try {
       const result = await TokenTransferService.transferTokens(
@@ -431,17 +425,11 @@ export function ChatInterface() {
         // Refresh wallet data
         await refreshWalletData();
       } else {
-        setMessages(prev => [...prev, {
-          role: "assistant",
-          content: `❌ Transfer failed: ${result.message}`
-        }]);
+        
       }
     } catch (error) {
       console.error("Error executing transfer:", error);
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: `❌ An error occurred: ${error.message || "Unknown error"}`
-      }]);
+   
     } finally {
       setTransferIntent(null);
     }
@@ -645,10 +633,7 @@ export function ChatInterface() {
             }}
             onError={(error) => {
               // Add an error message to the chat
-              setMessages(prev => [...prev, {
-                role: "assistant",
-                content: `❌ Transfer failed: ${error.message || "Unknown error"}`
-              }]);
+           
               setTransferIntent(null);
               setAutoExecuteTransfer(false); // Reset auto-execute flag
             }}
