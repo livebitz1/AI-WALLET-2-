@@ -78,13 +78,8 @@ export function SwapExecutor({
         if (onSuccess) {
           onSuccess(result);
         }
-      } else {
-        notify.error("Swap Failed", result.message);
-        
-        if (onError) {
-          onError(result);
-        }
       }
+      
     } catch (error) {
       console.error("Error executing swap:", error);
       notify.error("Swap Error", `An unexpected error occurred: ${error.message || "Unknown error"}`);

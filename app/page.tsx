@@ -5,8 +5,10 @@ import { ChatInterface } from "@/components/ChatInterface";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { WalletButton } from "@/components/WalletButton";
 import { TokenDisplay } from "@/components/TokenDisplay";
+import { MarketTrends } from "@/components/MarketTrends"; // Import our new component
 import { HeroSection } from "@/components/HeroSection";
 import { FeatureShowcase } from "@/components/FeatureShowcase";
+import { SubscriptionCards } from "@/components/SubscriptionCards";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletStore } from "@/lib/wallet-store";
 import { motion } from "framer-motion";
@@ -16,6 +18,7 @@ export default function Home() {
   const { walletData } = useWalletStore();
   const [scrolled, setScrolled] = useState(false);
   const sectionRefs = useRef<HTMLDivElement[]>([]);
+  const [commandHover, setCommandHover] = useState(false);
 
   // Animation timeline effects
   useEffect(() => {
@@ -82,7 +85,7 @@ export default function Home() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex items-center space-x-4"
+            className="flex items-center ml-auto"
           >
             <WalletButton />
           </motion.div>
@@ -95,6 +98,9 @@ export default function Home() {
           ref={(el) => el && (sectionRefs.current[0] = el)}
           walletConnected={connected}
         />
+
+        {/* Subscription Cards */}
+     
 
         {/* Main interface container - restructured for optimal space usage */}
         <div className="my-12 grid grid-cols-12 gap-4">
@@ -143,37 +149,8 @@ export default function Home() {
               </div>
             )}
 
-            {/* Market trends card */}
-            <div className="rounded-xl border border-border/40 bg-card p-4 shadow-lg hover:shadow-xl transition-all">
-              <h3 className="text-base font-medium mb-3 flex items-center">
-                <span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                Market Trends
-              </h3>
-
-              <div className="space-y-2">
-                {["SOL", "USDC", "BONK", "JUP"].map((token, i) => (
-                  <div
-                    key={token}
-                    className="flex justify-between items-center border-b border-border/30 pb-1 text-sm"
-                  >
-                    <span className="font-medium">{token}</span>
-                    <div className="flex items-center">
-                      <span
-                        className={`${
-                          i % 2 === 0 ? "text-green-400" : "text-red-400"
-                        } mr-1`}
-                      >
-                        {i % 2 === 0 ? "+" : "-"}
-                        {(Math.random() * 5).toFixed(2)}%
-                      </span>
-                      <div className="w-16 h-8">
-                        <div className="sparkline" data-token={token}></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Replace the hardcoded Market trends card with our new component */}
+            <MarketTrends />
           </motion.div>
 
           {/* Center panel - ChatInterface - This is where the AI functionality is */}
@@ -186,6 +163,7 @@ export default function Home() {
           >
             <div className="chat-interface h-full">
               <ChatInterface />
+              {/* Voice input button removed */}
             </div>
           </motion.div>
 
@@ -400,6 +378,82 @@ export default function Home() {
         </div>
       </main>
 
+      {/* Command Menu */}
+      <motion.div 
+        className="fixed bottom-6 right-6 z-50"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 1, duration: 0.3 }}
+        onHoverStart={() => setCommandHover(true)}
+        onHoverEnd={() => setCommandHover(false)}
+      >
+        <motion.div
+          className="relative"
+          animate={{ width: commandHover ? "auto" : "auto" }}
+        >
+          {/* Command button */}
+          <motion.button 
+            className={`w-12 h-12 rounded-full ${
+              commandHover ? "bg-primary" : "bg-primary/80"
+            } text-primary-foreground flex items-center justify-center shadow-lg hover:shadow-xl transition-all`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+            </svg>
+          </motion.button>
+          
+          {/* Command menu */}
+          <motion.div 
+            className="absolute bottom-14 right-0 w-64 bg-card rounded-lg shadow-xl border border-border/50 backdrop-blur-sm overflow-hidden"
+            initial={{ opacity: 0, y: 10, height: 0 }}
+            animate={{ 
+              opacity: commandHover ? 1 : 0,
+              y: commandHover ? 0 : 10,
+              height: commandHover ? "auto" : 0,
+              pointerEvents: commandHover ? "auto" : "none"
+            }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="p-3 border-b border-border/50">
+              <h3 className="font-medium text-sm">Get Started</h3>
+            </div>
+            <div className="p-2">
+              {[
+                { command: "Check balance", description: "View your current tokens", icon: "💰" },
+                { command: "Send 0.01 SOL to address", description: "Transfer to another wallet", icon: "📤" },
+                { command: "Swap 0.1 SOLto USDC", description: "Swap the coins", icon: "📜" },
+                { command: "Get help", description: "Chat with AI assistant", icon: "🤖" },
+              ].map((item, i) => (
+                <motion.div 
+                  key={i}
+                  className="flex items-center p-2 hover:bg-primary/10 rounded-md cursor-pointer transition-colors"
+                  whileHover={{ x: 3 }}
+                  initial={{ opacity: 0, x: -5 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.05 * i }}
+                >
+                  <div className="w-8 h-8 mr-3 rounded-md bg-primary/10 flex items-center justify-center text-lg">
+                    {item.icon}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{item.command}</p>
+                    <p className="text-xs text-muted-foreground">{item.description}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+            <div className="p-2 bg-muted/30 border-t border-border/50">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Press <kbd className="px-2 py-0.5 rounded bg-muted">?</kbd> for shortcuts</span>
+                <span>v1.0</span>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      </motion.div>
+
       {/* 3D Floating Icons - Fixed position - Performance Optimized */}
       <div className="fixed right-4 top-1/4 hidden xl:block h-screen pointer-events-none">
         <div className="relative h-full w-48">
@@ -598,6 +652,9 @@ export default function Home() {
           />
         </motion.div>
       </div>
+      <section className="py-16 my-8">
+          <SubscriptionCards />
+        </section>
 
       {/* Footer */}
       <footer className="border-t border-border/30 bg-background/50 backdrop-blur-sm">

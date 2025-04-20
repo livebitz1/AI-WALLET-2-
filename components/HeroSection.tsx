@@ -243,6 +243,8 @@ export const HeroSection = forwardRef<HTMLDivElement, HeroSectionProps>(
         ref={ref}
         className="relative py-16 md:py-24 overflow-hidden border-b border-border/40"
       >
+        {/* Command Card - positioned absolutely */}
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}

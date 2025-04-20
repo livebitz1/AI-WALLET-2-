@@ -6,6 +6,7 @@ import { TOKEN_METADATA } from "./token-metadata";
 import { recordInteraction } from "./ai-training";
 import { WalletDataProvider } from './wallet-data-provider';
 import { TransactionMemoryManager } from './transaction-memory';
+import { knowledgeService } from './services/knowledge-service';
 
 // Context history for better AI interactions
 type UserProfile = {
@@ -349,7 +350,39 @@ export class AIContextManager {
     }
     
     // Generate personalized system prompt
-    let systemPrompt = `You are a Web3 AI assistant specializing in Solana blockchain. `;
+    let systemPrompt = `You are a Web3 AI assistant specializing in Solana blockchain with extensive cryptocurrency knowledge. `;
+    
+    // Enhanced expertise-based prompt adjustments
+    if (profile.expertiseLevel === "advanced") {
+      systemPrompt += `As I can tell you're an advanced crypto user, I'll provide in-depth technical information and sophisticated analysis. I'll reference concepts like liquidity pools, MEV, tokenomics, and advanced trading strategies assuming you understand the fundamentals. `;
+    } else if (profile.expertiseLevel === "intermediate") {
+      systemPrompt += `Based on our interactions, I'll provide balanced technical details with clear explanations, focusing on practical applications and investment strategies. I'll explain more advanced concepts when introducing them. `;
+    } else {
+      systemPrompt += `I'll explain crypto concepts in clear, simple terms avoiding unnecessary jargon. When technical terms are needed, I'll provide brief explanations to help you learn. `;
+    }
+    
+    // Add token expertise based on preferred tokens
+    if (profile.preferredTokens.length > 0) {
+      const preferredToken = profile.preferredTokens[0];
+      const tokenInfo = knowledgeService.getTokenInfo(preferredToken);
+      if (tokenInfo.found) {
+        systemPrompt += `I see you're interested in ${preferredToken}. `;
+        
+        if (profile.expertiseLevel === "advanced") {
+          // Include technical details for advanced users
+          const token = tokenInfo.data;
+          if (token.technology) {
+            systemPrompt += `${preferredToken} uses ${token.technology.consensus} consensus with ${token.technology.blockTime} block time. `;
+          }
+          if (token.tokenomics) {
+            systemPrompt += `Its tokenomics include ${token.tokenomics.maxSupply} max supply with institutional backing. `;
+          }
+        } else {
+          // Simpler explanation for beginner/intermediate
+          systemPrompt += `It's a ${tokenInfo.data.category} token used for ${tokenInfo.data.useCases}. `;
+        }
+      }
+    }
     
     // Add wallet info with more details
     if (this.walletAddress) {
@@ -384,30 +417,27 @@ export class AIContextManager {
       systemPrompt += `The user hasn't connected their wallet yet. Guide them to connect their wallet to access full functionality. `;
     }
     
-    // Personalization based on profile with more depth
-    systemPrompt += `Based on your interactions, you appear to be a ${profile.expertiseLevel} crypto user. `;
-    
-    if (profile.preferredTokens.length) {
-      systemPrompt += `You've shown interest in ${profile.preferredTokens.join(", ")}. `;
-    }
-    
+    // Include interests-based knowledge
     if (profile.interests.length) {
-      systemPrompt += `Your interests include ${profile.interests.join(", ")}. `;
+      for (const interest of profile.interests) {
+        // Add specialized knowledge based on user interests
+        if (interest === "defi") {
+          const defiInfo = knowledgeService.getConceptInfo("DeFi Fundamentals");
+          if (defiInfo.found) {
+            systemPrompt += `Since you're interested in DeFi, I'll include relevant protocol information and yield opportunities when appropriate. `;
+          }
+        } else if (interest === "trading") {
+          systemPrompt += `I notice you're interested in trading. I can provide technical analysis concepts, risk management frameworks, and market insights when relevant. `;
+        } else if (interest === "meme coins") {
+          systemPrompt += `For your interest in meme coins, I'll keep you updated on community trends and sentiment while emphasizing risk management. `;
+        }
+      }
     }
     
-    // Add appropriate level of detail based on expertise
-    if (profile.expertiseLevel === "advanced") {
-      systemPrompt += `I'll provide detailed technical information about DeFi protocols, tokenomics, and market analysis. I'll assume you understand concepts like liquidity pools, impermanent loss, and yield farming strategies. `;
-    } else if (profile.expertiseLevel === "intermediate") {
-      systemPrompt += `I'll balance technical details with clear explanations, focusing on practical applications of blockchain technology and investment strategies. `;
-    } else {
-      systemPrompt += `I'll explain crypto concepts in simple terms and provide guidance on basic operations, avoiding technical jargon when possible. `;
-    }
+    // Add market context
+    systemPrompt += `I have access to comprehensive crypto knowledge including blockchain concepts, DeFi protocols, market analysis, and investment strategies. I can provide educational content tailored to your interests and expertise level. `;
     
-    // Add functional reminders
-    systemPrompt += `When providing swap recommendations, ensure you check the user's actual token balances first. If the user doesn't have enough of a token, suggest alternatives based on their current holdings. Always convert crypto slang to clear instructions.`;
-    
-    // Add transaction history context
+    // Add transaction history context if available
     if (recentTransactions.length > 0) {
       systemPrompt += `\n\nRecent transactions: `;
       recentTransactions.forEach((tx, i) => {
@@ -427,58 +457,47 @@ export class AIContextManager {
 - "Show my failed transactions"
 - "When was my last swap?"`;
     
-    // Generate suggested topics based on profile
+    // Generate suggested topics based on enhanced profile
     const suggestedTopics = [];
     
-    // Add token-specific suggestions
+    // More sophisticated topic suggestions based on expertise and interests
+    if (profile.expertiseLevel === "advanced") {
+      if (profile.interests.includes("defi")) {
+        suggestedTopics.push("Explain concentrated liquidity positions in DeFi");
+        suggestedTopics.push("How does MEV extraction work on Solana?");
+      }
+      if (profile.interests.includes("trading")) {
+        suggestedTopics.push("What on-chain metrics are most predictive for SOL price?");
+      }
+    } else if (profile.expertiseLevel === "intermediate") {
+      if (profile.interests.includes("defi")) {
+        suggestedTopics.push("Which lending protocols have the best risk-adjusted yields?");
+      }
+      if (profile.interests.includes("trading")) {
+        suggestedTopics.push("How can I manage risk when trading Solana tokens?");
+      }
+    } else {
+      // Beginner-friendly suggestions
+      suggestedTopics.push("What are the best tokens to start with on Solana?");
+      suggestedTopics.push("How do I stay safe in crypto?");
+    }
+    
+    // Add token-specific suggestions based on enhanced token data
     if (profile.preferredTokens.length) {
-      suggestedTopics.push(`Tell me about ${profile.preferredTokens[0]}`);
-      
-      // If they have balance for this token, offer to swap it
-      const preferredToken = profile.preferredTokens[0];
-      if (preferredToken === "SOL" && solBalance > 0.05) {
-        suggestedTopics.push(`Swap 0.05 SOL to USDC`);
-      } else if (preferredToken !== "SOL") {
-        const tokenBalance = tokenBalances.find(t => t.symbol === preferredToken);
-        if (tokenBalance && tokenBalance.balance > 0) {
-          // Only suggest swaps for tokens they actually own
-          const swapAmount = tokenBalance.balance * 0.1; // Suggest 10% of balance
-          suggestedTopics.push(`Swap ${swapAmount.toFixed(2)} ${preferredToken} to SOL`);
+      const token = profile.preferredTokens[0];
+      const tokenInfo = knowledgeService.getTokenInfo(token);
+      if (tokenInfo.found) {
+        if (tokenInfo.data.category === "Meme coin") {
+          suggestedTopics.push(`What factors drive ${token}'s price as a meme coin?`);
+        } else if (tokenInfo.data.category === "DeFi token") {
+          suggestedTopics.push(`How does ${token} compare to other DeFi protocols?`);
         } else {
-          // Suggest exploring this token if they don't own it
-          suggestedTopics.push(`Swap SOL to ${preferredToken}`);
+          suggestedTopics.push(`What are the investment prospects for ${token}?`);
         }
       }
     }
-    
-    // Add interest-specific suggestions
-    for (const interest of profile.interests) {
-      switch(interest) {
-        case "defi":
-          suggestedTopics.push("What are the best DeFi protocols on Solana?");
-          break;
-        case "nft":
-          suggestedTopics.push("How do NFTs work on Solana?");
-          break;
-        case "meme coins":
-          suggestedTopics.push("Tell me about trending meme coins");
-          break;
-        case "governance":
-          suggestedTopics.push("How do DAOs work on Solana?");
-          break;
-        case "trading":
-          suggestedTopics.push("What are the best DEXes on Solana?");
-          break;
-        case "security":
-          suggestedTopics.push("How can I keep my wallet secure?");
-          break;
-      }
-      
-      // We only need one interest-based suggestion
-      if (suggestedTopics.length >= 3) break;
-    }
-    
-    // Add general suggestions if we need more
+
+    // Complete the rest of the suggestion logic
     if (suggestedTopics.length < 4) {
       // Always offer balance check if wallet is connected
       if (this.walletAddress && !suggestedTopics.includes("Check my balance")) {

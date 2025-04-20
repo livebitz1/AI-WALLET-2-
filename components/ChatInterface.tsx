@@ -16,6 +16,10 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import { SwapExecutor } from '@/components/SwapExecutor';
+import { TransferExecutor } from '@/components/TransferExecutor';
+import { TransactionConfirmationModal } from '@/components/TransactionConfirmationModal';
+import { TokenTransferService } from '@/lib/token-transfer-service';
+import { detectSolanaAddress } from '@/lib/wallet-address-utils';
 
 // SuggestionChip component for interactive suggestion buttons
 const SuggestionChip = ({ suggestion, onSelect }: { suggestion: string; onSelect: (s: string) => void }) => (
@@ -151,6 +155,12 @@ export function ChatInterface() {
   // Add state for pending swap intent
   const [pendingSwapIntent, setPendingSwapIntent] = useState<SwapIntent | null>(null);
   const [autoExecuteSwap, setAutoExecuteSwap] = useState<boolean>(false);
+
+  // Add these states if they don't already exist
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [transferIntent, setTransferIntent] = useState<any>(null);
+  const [autoExecuteTransfer, setAutoExecuteTransfer] = useState<boolean>(false);
 
   // Determine if user is at bottom of chat
   const isNearBottom = useCallback(() => {
@@ -312,7 +322,7 @@ export function ChatInterface() {
     }
   };
 
-  const handleAIResponse = (response: any) => {
+  const handleAIResponse = async (response: any) => {
     // Check if the response has a swap intent
     if (response.intent && response.intent.action === 'swap') {
       // Automatically set the intent for execution
@@ -322,6 +332,18 @@ export function ChatInterface() {
       // Clear any pending swap intents
       setPendingSwapIntent(null);
       setAutoExecuteSwap(false);
+    }
+
+    // Check if the response includes a transfer intent
+    if (response.intent?.action === "transfer") {
+      setTransferIntent(response.intent);
+      
+      // Add appropriate suggestions
+      if (!response.suggestions?.includes("Confirm")) {
+        response.suggestions = ["Confirm", "Cancel", ...(response.suggestions || [])];
+      }
+    } else {
+      setTransferIntent(null);
     }
   };
 
@@ -349,6 +371,82 @@ export function ChatInterface() {
     setAutoExecuteSwap(false);
   };
 
+  const handleConfirmTransfer = async () => {
+    if (!transferIntent) return;
+    
+    setIsExecuting(true);
+    
+    try {
+      // Add a pending message to show the user that something is happening
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: `Processing your transfer of ${transferIntent.amount} ${transferIntent.token} to ${transferIntent.recipient.slice(0, 4)}...${transferIntent.recipient.slice(-4)}...`
+      }]);
+      
+      // No need to call TokenTransferService directly - TransferExecutor will handle it
+      // Just set autoExecute to true when we show the TransferExecutor
+      setAutoExecuteTransfer(true);
+      
+    } catch (error) {
+      console.error("Error executing transfer:", error);
+      
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: `❌ An error occurred during the transfer: ${error.message || "Unknown error"}`
+      }]);
+    } finally {
+      setIsExecuting(false);
+      setIsConfirmationOpen(false);
+    }
+  };
+
+  const executeTransfer = async (intent: any) => {
+    if (!intent || !publicKey) {
+      console.error("Cannot execute transfer: missing intent or wallet not connected");
+      return;
+    }
+    
+    // Add a pending message
+    setMessages(prev => [...prev, {
+      role: "assistant",
+      content: "Processing your transfer..."
+    }]);
+    
+    try {
+      const result = await TokenTransferService.transferTokens(
+        { publicKey, signTransaction, connected },
+        intent.recipient,
+        intent.amount,
+        intent.token
+      );
+      
+      if (result.success) {
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: `✅ Transfer successful! ${result.message}${
+            result.explorerUrl ? ` [View on Solana Explorer](${result.explorerUrl})` : ''
+          }`
+        }]);
+        
+        // Refresh wallet data
+        await refreshWalletData();
+      } else {
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: `❌ Transfer failed: ${result.message}`
+        }]);
+      }
+    } catch (error) {
+      console.error("Error executing transfer:", error);
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: `❌ An error occurred: ${error.message || "Unknown error"}`
+      }]);
+    } finally {
+      setTransferIntent(null);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -357,6 +455,18 @@ export function ChatInterface() {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
+    if (suggestion === "Confirm" && transferIntent) {
+      executeTransfer(transferIntent);
+      return;
+    } else if (suggestion === "Cancel" && transferIntent) {
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: "Transaction cancelled."
+      }]);
+      setTransferIntent(null);
+      return;
+    }
+
     setInput(suggestion);
     // Focus and move cursor to end
     if (inputRef.current) {
@@ -368,154 +478,194 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="chat-interface flex flex-col h-[calc(100vh-9rem)] md:h-[calc(100vh-12rem)] rounded-xl border border-border/40 overflow-hidden shadow-lg bg-card/50 backdrop-blur-sm">
-      {/* Chat header */}
-      <div className="border-b border-border/40 p-4 flex items-center justify-between bg-card/80">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-            <MdIcons.MdSmartToy className="text-primary text-lg" />
-          </div>
-          <div>
-            <h2 className="font-medium">AI Assistant</h2>
-            <p className="text-xs text-muted-foreground">
-              {connected 
-                ? `Connected to ${formatWalletAddress(publicKey!.toString())}` 
-                : "Wallet not connected"}
-            </p>
-          </div>
-        </div>
-        <button 
-          onClick={() => {
-            setMessages([{
-              role: "assistant",
-              content: "Hi! I'm your Web3 AI assistant. How can I help you with Solana transactions today?"
-            }]);
-            setShouldAutoScroll(true);
-            setShowScrollButton(false);
-          }}
-          className="p-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Reset conversation"
-        >
-          <MdIcons.MdRefresh size={20} />
-        </button>
-      </div>
-      
-      {/* Messages container with proper scrolling */}
-      <div 
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent relative"
-      >
-        <div className="pb-4">
-          {messages.map((message, index) => (
-            <ChatMessage 
-              key={index} 
-              message={message} 
-              isLast={index === messages.length - 1} 
-            />
-          ))}
-          
-          {/* Loading indicator */}
-          {isProcessing && (
-            <div className="py-6 px-6 flex gap-4">
-              <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-                <MdIcons.MdSmartToy className="text-primary/80 text-lg" />
-              </div>
-              <div className="typing-indicator">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
+    <>
+      <div className="chat-interface flex flex-col h-[calc(100vh-9rem)] md:h-[calc(100vh-12rem)] rounded-xl border border-border/40 overflow-hidden shadow-lg bg-card/50 backdrop-blur-sm">
+        {/* Chat header */}
+        <div className="border-b border-border/40 p-4 flex items-center justify-between bg-card/80">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+              <MdIcons.MdSmartToy className="text-primary text-lg" />
             </div>
-          )}
-          
-          {/* Invisible element to scroll to */}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Scroll to bottom button */}
-        <AnimatePresence>
-          {showScrollButton && (
-            <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className="absolute bottom-4 right-4 p-3 rounded-full bg-primary shadow-lg text-primary-foreground hover:bg-primary/90 transition-all"
-              onClick={() => {
-                scrollToBottom();
-                setShouldAutoScroll(true);
-                setShowScrollButton(false);
-              }}
-              aria-label="Scroll to bottom"
-            >
-              <HiIcons.HiArrowDown size={20} />
-            </motion.button>
-          )}
-        </AnimatePresence>
-      </div>
-      
-      {/* Suggestions */}
-      <div className="px-4 py-3 border-t border-border/40 bg-muted/20 backdrop-blur-sm">
-        <AnimatePresence mode="wait">
-          <motion.div 
-            key={suggestions.join('-')} // Force re-render on suggestion change
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="flex flex-wrap gap-2"
-          >
-            {suggestions.map((suggestion, index) => (
-              <SuggestionChip
-                key={index}
-                suggestion={suggestion}
-                onSelect={handleSuggestionClick}
-              />
-            ))}
-          </motion.div>
-        </AnimatePresence>
-      </div>
-      
-      {/* Input area */}
-      <div className="p-4 border-t border-border/40 bg-card/80">
-        <div className="relative flex items-end">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
+            <div>
+              <h2 className="font-medium">AI Assistant</h2>
+              <p className="text-xs text-muted-foreground">
+                {connected 
+                  ? `Connected to ${formatWalletAddress(publicKey!.toString())}` 
+                  : "Wallet not connected"}
+              </p>
+            </div>
+          </div>
+          <button 
             onClick={() => {
-              // When user clicks input, we don't want to auto-scroll anymore
-              // if they've intentionally scrolled up to read history
-              if (!isNearBottom()) {
-                setShouldAutoScroll(false);
-              }
+              setMessages([{
+                role: "assistant",
+                content: "Hi! I'm your Web3 AI assistant. How can I help you with Solana transactions today?"
+              }]);
+              setShouldAutoScroll(true);
+              setShowScrollButton(false);
             }}
-            placeholder="Message AI Wallet Assistant..."
-            className="min-h-[44px] max-h-[200px] w-full rounded-lg pl-4 pr-12 py-3 bg-muted resize-none focus:outline-none focus:ring-1 focus:ring-primary/50"
-            rows={1}
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={isProcessing || input.trim() === ""}
-            className={`absolute right-2 bottom-2 p-2 rounded-md transition-colors ${
-              isProcessing || input.trim() === "" 
-                ? "text-muted-foreground" 
-                : "text-primary hover:bg-primary/10"
-            }`}
-            aria-label="Send message"
+            className="p-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Reset conversation"
           >
-            <RxIcons.RxPaperPlane size={18} />
+            <MdIcons.MdRefresh size={20} />
           </button>
         </div>
+        
+        {/* Messages container with proper scrolling */}
+        <div 
+          ref={chatContainerRef}
+          className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent relative"
+        >
+          <div className="pb-4">
+            {messages.map((message, index) => (
+              <ChatMessage 
+                key={index} 
+                message={message} 
+                isLast={index === messages.length - 1} 
+              />
+            ))}
+            
+            {/* Loading indicator */}
+            {isProcessing && (
+              <div className="py-6 px-6 flex gap-4">
+                <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                  <MdIcons.MdSmartToy className="text-primary/80 text-lg" />
+                </div>
+                <div className="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            )}
+            
+            {/* Invisible element to scroll to */}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Scroll to bottom button */}
+          <AnimatePresence>
+            {showScrollButton && (
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute bottom-4 right-4 p-3 rounded-full bg-primary shadow-lg text-primary-foreground hover:bg-primary/90 transition-all"
+                onClick={() => {
+                  scrollToBottom();
+                  setShouldAutoScroll(true);
+                  setShowScrollButton(false);
+                }}
+                aria-label="Scroll to bottom"
+              >
+                <HiIcons.HiArrowDown size={20} />
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
+        
+        {/* Suggestions */}
+        <div className="px-4 py-3 border-t border-border/40 bg-muted/20 backdrop-blur-sm">
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={suggestions.join('-')} // Force re-render on suggestion change
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex flex-wrap gap-2"
+            >
+              {suggestions.map((suggestion, index) => (
+                <SuggestionChip
+                  key={index}
+                  suggestion={suggestion}
+                  onSelect={handleSuggestionClick}
+                />
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        
+        {/* Input area */}
+        <div className="p-4 border-t border-border/40 bg-card/80">
+          <div className="relative flex items-end">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onClick={() => {
+                // When user clicks input, we don't want to auto-scroll anymore
+                // if they've intentionally scrolled up to read history
+                if (!isNearBottom()) {
+                  setShouldAutoScroll(false);
+                }
+              }}
+              placeholder="Message AI Wallet Assistant..."
+              className="min-h-[44px] max-h-[200px] w-full rounded-lg pl-4 pr-12 py-3 bg-muted resize-none focus:outline-none focus:ring-1 focus:ring-primary/50"
+              rows={1}
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={isProcessing || input.trim() === ""}
+              className={`absolute right-2 bottom-2 p-2 rounded-md transition-colors ${
+                isProcessing || input.trim() === "" 
+                  ? "text-muted-foreground" 
+                  : "text-primary hover:bg-primary/10"
+              }`}
+              aria-label="Send message"
+            >
+              <RxIcons.RxPaperPlane size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* Add the swap executor component */}
+        <SwapExecutor
+          intent={pendingSwapIntent}
+          onSuccess={handleSwapSuccess}
+          onError={handleSwapError}
+          autoExecute={autoExecuteSwap}
+        />
+
+        {/* Add the transfer executor component */}
+        {transferIntent?.action === "transfer" && (
+          <TransferExecutor
+            intent={transferIntent}
+            onSuccess={(result) => {
+              // Add a success message to the chat
+              setMessages(prev => [...prev, {
+                role: "assistant",
+                content: `✅ Transfer successful! ${result.message}${
+                  result.explorerUrl ? ` [View on Solana Explorer](${result.explorerUrl})` : ''
+                }`
+              }]);
+              setTransferIntent(null);
+              setAutoExecuteTransfer(false); // Reset auto-execute flag
+            }}
+            onError={(error) => {
+              // Add an error message to the chat
+              setMessages(prev => [...prev, {
+                role: "assistant",
+                content: `❌ Transfer failed: ${error.message || "Unknown error"}`
+              }]);
+              setTransferIntent(null);
+              setAutoExecuteTransfer(false); // Reset auto-execute flag
+            }}
+            // Use the state to control auto-execution
+            autoExecute={autoExecuteTransfer}
+          />
+        )}
       </div>
 
-      {/* Add the swap executor component */}
-      <SwapExecutor
-        intent={pendingSwapIntent}
-        onSuccess={handleSwapSuccess}
-        onError={handleSwapError}
-        autoExecute={autoExecuteSwap}
+      {/* Add confirmation modal */}
+      <TransactionConfirmationModal
+        isOpen={isConfirmationOpen}
+        onClose={() => setIsConfirmationOpen(false)}
+        onConfirm={handleConfirmTransfer}
+        intent={transferIntent}
+        isLoading={isExecuting}
       />
-    </div>
+    </>
   );
 }
