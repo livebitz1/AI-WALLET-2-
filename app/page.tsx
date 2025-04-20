@@ -12,6 +12,8 @@ import { SubscriptionCards } from "@/components/SubscriptionCards";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletStore } from "@/lib/wallet-store";
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Home() {
   const { publicKey, connected } = useWallet();
@@ -19,6 +21,7 @@ export default function Home() {
   const [scrolled, setScrolled] = useState(false);
   const sectionRefs = useRef<HTMLDivElement[]>([]);
   const [commandHover, setCommandHover] = useState(false);
+  const pathname = usePathname();
 
   // Animation timeline effects
   useEffect(() => {
@@ -70,22 +73,62 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             className="flex items-center space-x-2"
           >
-            <div className="relative w-8 h-8">
-              <div className="absolute inset-0 bg-primary rounded-full animate-pulse"></div>
-              <div className="absolute inset-1 bg-background rounded-full flex items-center justify-center">
-                <span className="text-primary font-bold">AI</span>
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="relative w-8 h-8">
+                <div className="absolute inset-0 bg-primary rounded-full animate-pulse"></div>
+                <div className="absolute inset-1 bg-background rounded-full flex items-center justify-center">
+                  <span className="text-primary font-bold">AI</span>
+                </div>
               </div>
-            </div>
-            <h1 className="text-xl font-bold tracking-tight">
-              <span className="text-primary">AI</span> Wallet
-            </h1>
+              <h1 className="text-xl font-bold tracking-tight">
+                <span className="text-primary">AI</span> Wallet
+              </h1>
+            </Link>
           </motion.div>
+
+          {/* Navigation Links */}
+          <motion.nav 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="hidden md:flex items-center space-x-1 mx-4"
+          >
+            <NavLink href="/" active={pathname === "/"}>
+              Home
+            </NavLink>
+            <NavLink href="/roadmap" active={pathname === "/roadmap"}>
+              <div className="flex items-center">
+                <span className="mr-1.5">Roadmap</span>
+                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary">
+                  New
+                </span>
+              </div>
+            </NavLink>
+            <NavLink href="/past-updates" active={pathname === "/roadmap"}>
+              <div className="flex items-center">
+                <span className="mr-1.5">Past-Updates</span>
+                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary">
+                  New
+                </span>
+              </div>
+            </NavLink>
+          </motion.nav>
+          
+          {/* Mobile Menu - Hamburger icon */}
+          <div className="md:hidden flex items-center">
+            <Link 
+              href="/roadmap"
+              className="mr-4 px-3 py-1 text-sm rounded-full border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            >
+              Roadmap
+            </Link>
+          </div>
 
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex items-center ml-auto"
+            className="flex items-center"
           >
             <WalletButton />
           </motion.div>
@@ -541,27 +584,126 @@ export default function Home() {
               }}
               aria-hidden="true"
             >
-              <div className="p-4 h-full flex flex-col justify-between">
-                <div className="flex justify-between items-start">
-                  <div className={`w-10 h-10 rounded-full bg-${coin.name === "SOL" ? "purple" : coin.name === "USDC" ? "blue" : "yellow"}-400/30 flex items-center justify-center`}>
-                    <span className="text-white font-bold">{coin.name.charAt(0)}</span>
+              {/* Enhanced coin card design with holographic effects */}
+              <div className="p-4 h-full flex flex-col justify-between relative overflow-hidden group">
+                {/* Animated holographic background effect */}
+                <motion.div 
+                  className="absolute inset-0 opacity-30" 
+                  style={{
+                    background: 'linear-gradient(125deg, transparent 20%, rgba(255,255,255,0.4) 25%, transparent 30%)',
+                    backgroundSize: '200% 200%',
+                  }}
+                  animate={{
+                    backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+
+                {/* Enhanced coin card content */}
+                <div className="flex justify-between items-start relative z-10">
+                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${
+                    coin.name === "SOL" ? "from-purple-500 to-violet-400" : 
+                    coin.name === "USDC" ? "from-blue-500 to-cyan-400" : 
+                    "from-yellow-500 to-amber-400"
+                  } flex items-center justify-center shadow-lg transform transition-all duration-300 group-hover:scale-110`}
+                  style={{ 
+                    boxShadow: '0 0 15px rgba(255,255,255,0.3)' 
+                  }}>
+                    {/* 3D embossed coin logo */}
+                    <span className="text-white font-bold" style={{ 
+                      textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                      letterSpacing: '-0.5px' 
+                    }}>{coin.name.charAt(0)}</span>
+                    
+                    {/* Shine effect on the coin */}
+                    <motion.div
+                      className="absolute inset-0 rounded-full bg-gradient-to-br from-white/40 to-transparent"
+                      style={{ 
+                        clipPath: 'polygon(0 0, 100% 0, 70% 70%, 0 100%)',
+                        opacity: 0.6
+                      }}
+                      animate={{
+                        opacity: [0.6, 0.8, 0.6],
+                        rotate: [0, 5, 0]
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        repeatType: "reverse"
+                      }}
+                    />
                   </div>
-                  <span className="text-xs font-medium text-white">
-                    {coin.name}
-                  </span>
+
+                  {/* Enhanced coin name label */}
+                  <div className="flex flex-col items-end">
+                    <span className="text-xs font-medium text-white mb-1 tracking-wide">
+                      {coin.name}
+                    </span>
+                    <motion.span 
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                        i === 0 ? "bg-green-500/30 text-green-200" : 
+                        i === 1 ? "bg-blue-500/30 text-blue-200" : 
+                        "bg-yellow-500/30 text-yellow-200"
+                      }`}
+                      animate={{
+                        opacity: [0.7, 1, 0.7]
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        repeatType: "reverse",
+                        delay: i * 0.5
+                      }}
+                    >
+                      {i === 0 ? "+4.2%" : i === 1 ? "-0.8%" : "+1.3%"}
+                    </motion.span>
+                  </div>
                 </div>
                 
-                <div>
-                  <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                {/* Enhanced price chart visualization */}
+                <div className="mt-auto relative z-10">
+                  {/* Fake candlestick chart */}
+                  <div className="h-10 w-full flex items-end space-x-0.5 mb-2 opacity-60">
+                    {[...Array(12)].map((_, idx) => {
+                      const height = 30 + Math.random() * 70;
+                      const isPositive = Math.random() > 0.4;
+                      return (
+                        <div 
+                          key={idx} 
+                          className="flex-1"
+                          style={{ height: `${height}%` }}
+                        >
+                          <motion.div
+                            className={`w-full h-full rounded-sm ${isPositive ? 'bg-green-500/70' : 'bg-red-500/70'}`}
+                            initial={{ scaleY: 0 }}
+                            animate={{ scaleY: 1 }}
+                            transition={{
+                              duration: 0.5,
+                              delay: 0.1 * idx + i,
+                              ease: "easeOut"
+                            }}
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
+                  
+                  {/* Enhanced progress bar with glow */}
+                  <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden relative">
                     <motion.div 
-                      className="h-full bg-white/40 rounded-full"
+                      className={`h-full rounded-full ${
+                        coin.name === "SOL" ? "bg-purple-500/70" : 
+                        coin.name === "USDC" ? "bg-blue-500/70" : 
+                        "bg-yellow-500/70"
+                      }`}
                       initial={{ width: "20%" }}
                       animate={{ width: ["20%", "80%", "20%"] }}
                       transition={{
                         duration: 8,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: i * 1.2
                       }}
                     />
                   </div>
@@ -684,5 +826,32 @@ export default function Home() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// NavLink component for consistent navigation styling
+function NavLink({ href, children, active = false }: { href: string; children: React.ReactNode; active?: boolean }) {
+  return (
+    <Link href={href}>
+      <motion.div
+        className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+          active ? "text-primary" : "text-foreground hover:text-primary"
+        }`}
+        whileHover={{ 
+          backgroundColor: "rgba(var(--primary), 0.08)",
+        }}
+      >
+        {children}
+        {active && (
+          <motion.div
+            layoutId="activeNavIndicator"
+            className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary mx-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          />
+        )}
+      </motion.div>
+    </Link>
   );
 }
