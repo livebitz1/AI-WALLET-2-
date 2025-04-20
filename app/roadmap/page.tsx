@@ -10,7 +10,7 @@ import {
   Shield, Layers, Cpu
 } from "lucide-react";
 
-// Updated roadmap data with status and more professional descriptions
+// Updated roadmap data with INTELIQ branding
 const roadmapItems = [
   {
     title: "Inteliq V2",
@@ -196,7 +196,7 @@ export default function Roadmap() {
                   >
                     <Image 
                       src="/logo.webp" 
-                      alt="AI Wallet Logo" 
+                      alt="INTELIQ Logo" 
                       width={28} 
                       height={28} 
                       className="rounded-md object-cover"
@@ -205,7 +205,7 @@ export default function Roadmap() {
                 </div>
               </div>
               <h1 className="text-xl font-bold tracking-tight">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">AI</span> Wallet
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">INTEL</span>IQ
                 <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-gradient-to-r from-primary to-accent group-hover:w-full transition-all duration-300"></span>
               </h1>
             </Link>
@@ -223,6 +223,12 @@ export default function Roadmap() {
             <Link href="/roadmap" className="text-sm font-medium text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-gradient-to-r after:from-primary after:to-accent">
               Roadmap
             </Link>
+            <Link href="/past-updates" className="text-sm font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-gradient-to-r after:from-primary/40 after:to-primary hover:after:w-full after:transition-all after:duration-300">
+              Updates
+            </Link>
+            <Link href="/twitter-feed" className="text-sm font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-gradient-to-r after:from-primary/40 after:to-primary hover:after:w-full after:transition-all after:duration-300">
+              Twitter
+            </Link>
           </motion.nav>
         </div>
       </header>
@@ -239,24 +245,78 @@ export default function Roadmap() {
           <div className="absolute top-40 left-1/4 w-72 h-72 bg-primary/5 rounded-full blur-[100px] -z-10"></div>
           <div className="absolute top-60 right-1/4 w-60 h-60 bg-accent/5 rounded-full blur-[100px] -z-10"></div>
           
-          {/* Enhanced icon with animation */}
+          {/* Professional rocket icon with enhanced animations */}
           <div className="inline-block mb-8 relative">
             <div className="relative w-28 h-28 mx-auto">
               <div className="absolute inset-0 bg-gradient-conic from-primary via-accent to-primary rounded-full blur-xl opacity-70 animate-slow-spin"></div>
               <div className="absolute inset-[3px] bg-gradient-to-br from-background to-background/80 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <motion.div 
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  transition={{ 
-                    repeat: Infinity, 
-                    repeatType: "reverse", 
-                    duration: 3,
-                    ease: "easeInOut"
-                  }}
-                  className="text-6xl"
-                >
-                  🚀
-                </motion.div>
+                <div className="relative w-16 h-16 flex items-center justify-center">
+                  {/* Animated particles around icon */}
+                  {[...Array(5)].map((_, i) => (
+                    <motion.div 
+                      key={i}
+                      className="absolute w-1.5 h-1.5 rounded-full bg-primary/60"
+                      initial={{ 
+                        x: 0, 
+                        y: 0,
+                        opacity: 0.4,
+                      }}
+                      animate={{ 
+                        x: Math.sin(i * Math.PI * 2 / 5) * 15, 
+                        y: Math.cos(i * Math.PI * 2 / 5) * 15,
+                        opacity: [0.4, 0.8, 0.4],
+                        scale: [1, 1.2, 1]
+                      }}
+                      transition={{
+                        duration: 3 + i * 0.2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    />
+                  ))}
+                  
+                  {/* Main rocket icon with animations */}
+                  <motion.div 
+                    initial={{ scale: 0.95, rotateZ: -5 }}
+                    animate={{ 
+                      scale: [0.95, 1.05, 0.95],
+                      rotateZ: [-5, 5, -5],
+                      y: [-2, 2, -2] 
+                    }}
+                    transition={{ 
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                    className="relative z-10"
+                  >
+                    <div className="relative">
+                      {/* Rocket exhaust effect */}
+                      <motion.div 
+                        className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-gradient-to-t from-primary/80 via-accent/40 to-transparent rounded-full blur-md"
+                        animate={{
+                          height: ["24px", "32px", "24px"],
+                          opacity: [0.6, 0.8, 0.6],
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      />
+                      
+                      {/* Rocket icon */}
+                      <Rocket 
+                        strokeWidth={1.5} 
+                        className="w-12 h-12 text-primary drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" 
+                        fill="rgba(var(--primary-rgb),0.1)"
+                      />
+                      
+                      {/* Highlight effect */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-full opacity-80"></div>
+                    </div>
+                  </motion.div>
+                </div>
               </div>
               
               {/* Orbit effect */}
@@ -288,7 +348,7 @@ export default function Roadmap() {
             transition={{ duration: 0.7, delay: 0.4 }}
             className="text-lg md:text-xl text-muted-foreground/90 max-w-3xl mx-auto leading-relaxed font-light"
           >
-            Our meticulously planned vision for AI Wallet's evolution. Discover the future of cryptocurrency 
+            Our meticulously planned vision for INTELIQ's evolution. Discover the future of cryptocurrency 
             management powered by cutting-edge artificial intelligence and blockchain technology.
           </motion.p>
           
@@ -505,13 +565,13 @@ export default function Roadmap() {
                 Our Vision Beyond 2025
               </h2>
               <p className="text-lg mb-10 text-center text-foreground/80 leading-relaxed max-w-3xl mx-auto">
-                AI Wallet is building the foundation for the next generation of financial intelligence. 
+                INTELIQ is building the foundation for the next generation of financial intelligence. 
                 Our roadmap is just the beginning of a journey toward completely reimagining how individuals and institutions 
                 interact with digital assets in an AI-first world.
               </p>
               <div className="flex justify-center">
                 <motion.a
-                  href="https://twitter.com/aiwallet"
+                  href="https://twitter.com/inteliq"
                   target="_blank"
                   rel="noopener noreferrer"
                   whileHover={{ scale: 1.03, boxShadow: "0 20px 40px -15px rgba(var(--primary-rgb), 0.5)" }}

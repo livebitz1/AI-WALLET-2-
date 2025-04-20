@@ -17,13 +17,12 @@ export async function GET() {
 
     // Make the API request to CoinMarketCap
     const response = await fetch(
-      'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', 
+      'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=30', 
       {
         headers: {
           'X-CMC_PRO_API_KEY': apiKey,
           'Accept': 'application/json'
         },
-        // Specify parameters for the API request
         method: 'GET',
         next: {
           revalidate: 120 // Cache for 2 minutes
@@ -66,9 +65,9 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Error in market-trends API route:', error);
+    console.error('Error fetching from CoinMarketCap:', error);
     return NextResponse.json(
-      { error: 'Internal server error' }, 
+      { error: 'Failed to fetch market data' },
       { status: 500 }
     );
   }

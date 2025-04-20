@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, InfoIcon, Lightbulb, Sparkles, Zap, 
   Rocket, Gift, X, ChevronRight, Heart, Award, 
-  TrendingUp, BarChart, ShieldCheck, Users
+  TrendingUp, BarChart, ShieldCheck, Users, History
 } from "lucide-react";
 
 interface HelpItem {
@@ -154,6 +154,57 @@ export function CommandPalette({
           icon: <Gift className="w-4 h-4" />,
           content: "Active community members will soon be able to earn rewards through our upcoming community program. Contribute ideas, help other users, or participate in testing to earn exclusive benefits.",
           highlight: true,
+        }
+      ]
+    },
+    {
+      name: "Transaction History",
+      icon: <History className="w-5 h-5" />,
+      description: "View your transaction history",
+      items: [
+        {
+          id: "today-transactions",
+          name: "Today's transactions", 
+          description: "View transactions from today",
+          icon: <History className="w-4 h-4" />,
+          content: "View all transactions that occurred today including swaps, transfers and other activities.",
+          action: () => {
+            handleInsertCommand("Show me my transactions today");
+            onClose();
+          }
+        },
+        {
+          id: "yesterday-transactions",
+          name: "Yesterday's transactions", 
+          description: "View transactions from yesterday",
+          icon: <History className="w-4 h-4" />,
+          content: "View all transactions that occurred yesterday including swaps, transfers and other activities.",
+          action: () => {
+            handleInsertCommand("Show me my transactions yesterday");
+            onClose();
+          }
+        },
+        {
+          id: "week-transactions",
+          name: "This week's transactions", 
+          description: "View transactions from this week",
+          icon: <History className="w-4 h-4" />,
+          content: "View all transactions that occurred during the current week.",
+          action: () => {
+            handleInsertCommand("Show me my transactions this week");
+            onClose();
+          }
+        },
+        {
+          id: "month-transactions",
+          name: "This month's transactions", 
+          description: "View transactions from this month",
+          icon: <History className="w-4 h-4" />,
+          content: "View all transactions that occurred during the current month.",
+          action: () => {
+            handleInsertCommand("Show me my transactions this month");
+            onClose();
+          }
         }
       ]
     }

@@ -1,212 +1,237 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import dynamic from "next/dynamic";
-import { WalletDataProvider } from "@/lib/wallet-data-provider";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, ChevronDown, Copy, Check, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Loader2, ExternalLink, AlertCircle, CheckCircle2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
-// Dynamically import wallet components with SSR disabled
-const WalletMultiButtonDynamic = dynamic(
-  async () => (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
-  { ssr: false }
-);
+type PhantomEvent = "disconnect" | "connect" | "accountChanged"
+
+interface ConnectOpts {
+  onlyIfTrusted: boolean
+}
+
+interface PhantomProvider {
+  connect: (opts?: Partial<ConnectOpts>) => Promise<{ publicKey: { toString: () => string } }>
+  disconnect: () => Promise<void>
+  on: (event: PhantomEvent, callback: () => void) => void
+  isPhantom?: boolean
+  isConnected: boolean
+  publicKey: { toString: () => string } | null
+}
+
+type WindowWithSolana = Window & {
+  solana?: PhantomProvider
+}
 
 export default function WalletConnect() {
-  const { publicKey, connected } = useWallet();
-  const [walletData, setWalletData] = useState<any>({
-    solBalance: 0,
-    tokens: [],
-    totalValueUsd: 0
-  });
-  const [copied, setCopied] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showTokens, setShowTokens] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [provider, setProvider] = useState<PhantomProvider | null>(null)
+  const [connected, setConnected] = useState(false)
+  const [publicKey, setPublicKey] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [showDialog, setShowDialog] = useState(false)
+  const [connectionStatus, setConnectionStatus] = useState<"idle" | "connecting" | "success" | "error">("idle")
 
-  // Set mounted state when component mounts
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const checkForPhantom = async () => {
+      const solWindow = window as WindowWithSolana
 
-  // Fetch wallet data
-  useEffect(() => {
-    let isMounted = true;
-    let retryCount = 0;
-    const maxRetries = 3;
-    
-    const fetchWalletData = async () => {
-      if (!publicKey || !connected) {
-        if (isMounted) {
-          setWalletData({
-            solBalance: 0,
-            tokens: [],
-            totalValueUsd: 0
-          });
-        }
-        return;
-      }
-      
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Use WalletDataProvider for reliable data fetching
-        const data = await WalletDataProvider.getWalletData(publicKey.toString());
-        
-        if (isMounted) {
-          setWalletData(data);
-          setLoading(false);
-          retryCount = 0;
-        }
-      } catch (error: any) {
-        console.error("Failed to fetch wallet data:", error);
-        
-        if (isMounted) {
-          setError("Failed to load wallet data");
-          setLoading(false);
-          
-          // Retry with exponential backoff
-          if (retryCount < maxRetries) {
-            retryCount++;
-            const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
-            console.log(`Retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`);
-            setTimeout(fetchWalletData, delay);
-          }
-        }
-      }
-    };
-    
-    fetchWalletData();
-    
-    // Refresh periodically
-    const intervalId = setInterval(fetchWalletData, 60000); // Every minute
-    
-    return () => {
-      isMounted = false;
-      clearInterval(intervalId);
-    };
-  }, [publicKey, connected]);
+      if ("solana" in window && solWindow.solana?.isPhantom) {
+        setProvider(solWindow.solana)
 
-  // Copy wallet address
-  const copyAddress = () => {
-    if (publicKey) {
-      navigator.clipboard.writeText(publicKey.toString());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+        if (solWindow.solana.isConnected) {
+          setConnected(true)
+          setPublicKey(solWindow.solana.publicKey?.toString() || null)
+        }
+
+        // Register event listeners
+        solWindow.solana.on("connect", () => {
+          setConnected(true)
+          setPublicKey(solWindow.solana?.publicKey?.toString() || null)
+        })
+
+        solWindow.solana.on("disconnect", () => {
+          setConnected(false)
+          setPublicKey(null)
+        })
+      }
     }
-  };
 
-  // Manual refresh
-  const handleRefresh = async () => {
-    if (!publicKey || !connected) return;
-    
-    setLoading(true);
-    setError(null);
-    
+    checkForPhantom()
+  }, [])
+
+  const connectWallet = async () => {
+    if (!provider) {
+      setShowDialog(true)
+      return
+    }
+
     try {
-      const data = await WalletDataProvider.getWalletData(publicKey.toString());
-      setWalletData(data);
+      setIsLoading(true)
+      setConnectionStatus("connecting")
+      const { publicKey } = await provider.connect()
+      setPublicKey(publicKey.toString())
+      setConnected(true)
+      setConnectionStatus("success")
     } catch (error) {
-      console.error("Manual refresh failed:", error);
-      setError("Refresh failed");
+      console.error(error)
+      setConnectionStatus("error")
     } finally {
-      setLoading(false);
+      setIsLoading(false)
+      setTimeout(() => setConnectionStatus("idle"), 2000)
     }
-  };
+  }
 
-  // Get explorer URL
-  const getExplorerUrl = () => {
-    if (!publicKey) return "";
-    const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'devnet' ? 'devnet' : 'mainnet-beta';
-    return `https://explorer.solana.com/address/${publicKey.toString()}?cluster=${network}`;
-  };
+  const disconnectWallet = async () => {
+    if (provider) {
+      try {
+        await provider.disconnect()
+        setConnected(false)
+        setPublicKey(null)
+      } catch (error) {
+        console.error(error)
+      }
+    }
+  }
 
-  // Don't render until mounted
-  if (!mounted) {
-    return null;
+  const redirectToPhantom = () => {
+    window.open("https://phantom.app/", "_blank")
+    setShowDialog(false)
   }
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-3">
-      {connected && publicKey ? (
-        <div className="flex items-center gap-2">
-          <div 
-            className="flex items-center gap-2 bg-secondary/80 hover:bg-secondary px-3 py-1.5 rounded-full text-sm cursor-pointer transition-colors"
-            onClick={() => setShowTokens(!showTokens)}
-          >
-            {loading ? (
-              <RefreshCw className="w-3 h-3 animate-spin" />
+    <div className="flex flex-col items-center justify-center gap-4">
+      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="relative">
+        <Button
+          onClick={connected ? disconnectWallet : connectWallet}
+          className={`relative overflow-hidden font-bold px-6 py-3 rounded-xl text-white ${
+            connected
+              ? "bg-purple-700 hover:bg-purple-800"
+              : "bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
+          }`}
+          disabled={isLoading}
+          size="lg"
+        >
+          <AnimatePresence mode="wait">
+            {isLoading ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-2"
+              >
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Connecting...</span>
+              </motion.div>
+            ) : connected ? (
+              <motion.div
+                key="connected"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-2"
+              >
+                <span>Disconnect Wallet</span>
+              </motion.div>
             ) : (
-              <div className={`w-2 h-2 rounded-full ${error ? 'bg-red-500' : 'bg-green-500'}`} />
+              <motion.div
+                key="connect"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-2"
+              >
+                <span>Connect Phantom Wallet</span>
+              </motion.div>
             )}
-            <span className="font-medium">
-              {walletData.solBalance.toFixed(4)} SOL
-              {walletData.totalValueUsd > 0 && ` (≈$${walletData.totalValueUsd.toFixed(2)})`}
-            </span>
-            <ChevronDown className={`h-3 w-3 transition-transform ${showTokens ? 'rotate-180' : ''}`} />
-          </div>
-          
-          <div className="flex items-center gap-1">
-            <button
-              onClick={copyAddress}
-              className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-secondary transition-colors"
-              title="Copy wallet address"
-            >
-              <span>{`${publicKey.toString().slice(0, 4)}...${publicKey.toString().slice(-4)}`}</span>
-              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            </button>
-            
-            <a
-              href={getExplorerUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-1 rounded-full hover:bg-secondary transition-colors"
-              title="View on Solana Explorer"
-            >
-              <ExternalLink className="h-3 w-3" />
-            </a>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 rounded-full"
-              onClick={handleRefresh}
-              disabled={loading}
-              title="Refresh wallet data"
-            >
-              <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
-          
-          {/* Token dropdown */}
-          {showTokens && (
-            <div className="absolute top-12 right-4 z-50 bg-card border rounded-md shadow-lg p-2 min-w-48 max-h-64 overflow-y-auto">
-              <p className="text-xs font-medium mb-2">Tokens ({walletData.tokens.length})</p>
-              {walletData.tokens.map((token: any, i: number) => (
-                <div key={i} className="flex justify-between items-center py-1 text-sm">
-                  <span className="font-medium">{token.symbol}</span>
-                  <div className="text-right">
-                    <div>{token.balance.toLocaleString(undefined, {
-                      maximumFractionDigits: 6
-                    })}</div>
-                    {token.usdValue && (
-                      <div className="text-xs text-muted-foreground">
-                        ${token.usdValue.toFixed(2)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+          </AnimatePresence>
+
+          {/* Animated background effect */}
+          {!connected && !isLoading && (
+            <motion.div
+              className="absolute inset-0 -z-10 bg-gradient-to-r from-purple-400 to-violet-400 opacity-30"
+              animate={{
+                x: ["0%", "100%", "0%"],
+              }}
+              transition={{
+                duration: 3,
+                ease: "easeInOut",
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: "reverse",
+              }}
+            />
           )}
-        </div>
-      ) : null}
-      
-      <WalletMultiButtonDynamic className="!bg-primary !rounded-full !text-primary-foreground !py-2 !px-4" />
+        </Button>
+
+        {/* Status indicator */}
+        <AnimatePresence>
+          {connectionStatus === "success" && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute -bottom-8 left-0 right-0 flex justify-center text-green-500 text-sm font-medium"
+            >
+              <div className="flex items-center gap-1">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>Connected successfully!</span>
+              </div>
+            </motion.div>
+          )}
+
+          {connectionStatus === "error" && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute -bottom-8 left-0 right-0 flex justify-center text-red-500 text-sm font-medium"
+            >
+              <div className="flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                <span>Connection failed</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {connected && publicKey && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-mono"
+        >
+          {publicKey.slice(0, 4)}...{publicKey.slice(-4)}
+        </motion.div>
+      )}
+
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Phantom Wallet Required</DialogTitle>
+            <DialogDescription>You need to install Phantom wallet to continue.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center p-6 space-y-4">
+            <div className="rounded-full bg-purple-100 p-3">
+              <img src="/placeholder.svg?height=64&width=64" alt="Phantom Logo" className="h-16 w-16" />
+            </div>
+            <p className="text-center text-sm text-muted-foreground">
+              Phantom is a crypto wallet reimagined for DeFi and NFTs. Connect to Phantom to continue.
+            </p>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                onClick={redirectToPhantom}
+                className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Install Phantom Wallet
+              </Button>
+            </motion.div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
+  )
 }

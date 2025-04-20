@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 export default function PastUpdates() {
   const [scrolled, setScrolled] = useState(false);
@@ -289,13 +290,23 @@ export default function PastUpdates() {
           >
             <Link href="/" className="flex items-center space-x-2">
               <div className="relative w-8 h-8">
-                <div className="absolute inset-0 bg-primary rounded-full animate-pulse"></div>
-                <div className="absolute inset-1 bg-background rounded-full flex items-center justify-center">
-                  <span className="text-primary font-bold">AI</span>
-                </div>
+                <div className="absolute inset-0 bg-primary/30 rounded-full animate-pulse"></div>
+                <motion.div 
+                  className="absolute inset-0 flex items-center justify-center"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                >
+                  <Image 
+                    src="/logo.webp" 
+                    alt="INTELIQ Logo" 
+                    width={32} 
+                    height={32} 
+                    className="rounded-full object-cover z-10"
+                  />
+                </motion.div>
               </div>
               <h1 className="text-xl font-bold tracking-tight">
-                <span className="text-primary">AI</span> Wallet
+                <span className="text-primary">INTEL</span>IQ
               </h1>
             </Link>
           </motion.div>
@@ -309,6 +320,9 @@ export default function PastUpdates() {
             <NavLink href="/" active={pathname === "/"}>
               Home
             </NavLink>
+            <NavLink href="/roadmap" active={pathname === "/roadmap"}>
+              Roadmap
+            </NavLink>
             <NavLink href="/past-updates" active={pathname === "/past-updates"}>
               <div className="flex items-center">
                 <span className="mr-1.5">Updates</span>
@@ -316,6 +330,9 @@ export default function PastUpdates() {
                   New
                 </span>
               </div>
+            </NavLink>
+            <NavLink href="/twitter-feed" active={pathname === "/twitter-feed"}>
+              Twitter
             </NavLink>
           </motion.nav>
         </div>
@@ -330,7 +347,7 @@ export default function PastUpdates() {
           className="text-center mb-16"
         >
           <h1 className="text-4xl md:text-5xl font-bold mb-4 relative inline-block">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Updates & Changelog</span>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Updates & Challenges</span>
             <div className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-primary/50 to-accent/50 rounded-full"></div>
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -849,9 +866,9 @@ export default function PastUpdates() {
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="flex items-center space-x-2">
               <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-primary font-bold text-xs">AI</span>
+                <span className="text-primary font-bold text-xs">IQ</span>
               </div>
-              <p className="text-sm">© 2023 AI Wallet. All rights reserved.</p>
+              <p className="text-sm">© 2023 INTELIQ. All rights reserved.</p>
             </div>
 
             <div className="flex space-x-6">

@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { WalletButton } from "@/components/WalletButton";
 import { useWallet } from "@solana/wallet-adapter-react";
+import SpaceButton from "./SpaceButton";
 
 // Dynamic import Three.js to prevent server-side rendering issues
 let THREE: any;
@@ -256,9 +257,8 @@ export const HeroSection = forwardRef<HTMLDivElement, HeroSectionProps>(
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="inline-block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2 font-medium py-1 px-3 rounded-full self-start border border-primary/20 text-sm"
             >
-              AI-Powered Wallet Assistant
+              <SpaceButton text="INTELIQ" />
             </motion.div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight">

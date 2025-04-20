@@ -38,7 +38,7 @@ export default function TwitterFeed() {
   const tweets = [
     {
       id: 1,
-      content: "Excited to announce the upcoming release of AI Wallet v2.0 with new features including multi-chain support and advanced portfolio analytics! #AIWallet #Crypto",
+      content: "Excited to announce the upcoming release of INTELIQ v2.0 with new features including multi-chain support and advanced portfolio analytics! #INTELIQ #Crypto",
       date: "April 15, 2025",
       likes: 245,
       retweets: 87,
@@ -47,7 +47,7 @@ export default function TwitterFeed() {
     },
     {
       id: 2,
-      content: "Our AI-powered portfolio suggestion feature has just been rolled out to all Pro users. Simply ask the assistant for recommendations based on your risk profile! #AIWallet #PortfolioManagement",
+      content: "Our AI-powered portfolio suggestion feature has just been rolled out to all Pro users. Simply ask the assistant for recommendations based on your risk profile! #INTELIQ #PortfolioManagement",
       date: "April 12, 2025",
       likes: 198,
       retweets: 53,
@@ -56,7 +56,7 @@ export default function TwitterFeed() {
     },
     {
       id: 3,
-      content: "Community AMA happening next Friday at 2PM UTC. Join us to discuss our roadmap for Q2 and get all your questions answered by our team! #AIWallet #AMA #CryptoTech",
+      content: "Community AMA happening next Friday at 2PM UTC. Join us to discuss our roadmap for Q2 and get all your questions answered by our team! #INTELIQ #AMA #CryptoTech",
       date: "April 10, 2025",
       likes: 135,
       retweets: 41,
@@ -65,7 +65,7 @@ export default function TwitterFeed() {
     },
     {
       id: 4,
-      content: "Just published our deep dive into blockchain interoperability and how AI Wallet is preparing to support cross-chain transactions seamlessly. Read now on our blog! #Blockchain #Interoperability",
+      content: "Just published our deep dive into blockchain interoperability and how INTELIQ is preparing to support cross-chain transactions seamlessly. Read now on our blog! #Blockchain #Interoperability",
       date: "April 7, 2025",
       likes: 172,
       retweets: 63,
@@ -74,7 +74,7 @@ export default function TwitterFeed() {
     },
     {
       id: 5,
-      content: "Seeing incredible growth in our user base this month - over 50k new wallets connected! Thanks to our amazing community for spreading the word. #AIWallet #Growth #Web3",
+      content: "Seeing incredible growth in our user base this month - over 50k new wallets connected! Thanks to our amazing community for spreading the word. #INTELIQ #Growth #Web3",
       date: "April 3, 2025",
       likes: 301,
       retweets: 92,
@@ -83,7 +83,7 @@ export default function TwitterFeed() {
     },
     {
       id: 6,
-      content: "💡 Tip: Use the voice command feature by clicking the mic button to quickly swap tokens or check your balance without typing. #AIWallet #VoiceCommands #UX",
+      content: "💡 Tip: Use the voice command feature by clicking the mic button to quickly swap tokens or check your balance without typing. #INTELIQ #VoiceCommands #UX",
       date: "March 29, 2025",
       likes: 118,
       retweets: 31,
@@ -92,7 +92,7 @@ export default function TwitterFeed() {
     },
     {
       id: 7,
-      content: "We're listening! Based on your feedback, we've added support for custom token alerts. Set price thresholds and get notified when they're reached. #AIWallet #NewFeature",
+      content: "We're listening! Based on your feedback, we've added support for custom token alerts. Set price thresholds and get notified when they're reached. #INTELIQ #NewFeature",
       date: "March 25, 2025",
       likes: 226,
       retweets: 58,
@@ -101,7 +101,7 @@ export default function TwitterFeed() {
     },
     {
       id: 8,
-      content: "Security alert: Be aware of phishing attempts claiming to be from AI Wallet. We never DM you first or ask for your seed phrase. Stay safe! #CryptoSecurity #Phishing",
+      content: "Security alert: Be aware of phishing attempts claiming to be from INTELIQ. We never DM you first or ask for your seed phrase. Stay safe! #CryptoSecurity #Phishing",
       date: "March 21, 2025",
       likes: 419,
       retweets: 187,
@@ -110,7 +110,7 @@ export default function TwitterFeed() {
     },
     {
       id: 9,
-      content: "Did you know our AI assistant can compare tokenomics of different projects? Just ask \"Compare tokenomics of SOL and JUP\" to get a detailed analysis! #AIWallet #Tokenomics",
+      content: "Did you know our AI assistant can compare tokenomics of different projects? Just ask \"Compare tokenomics of SOL and JUP\" to get a detailed analysis! #INTELIQ #Tokenomics",
       date: "March 18, 2025",
       likes: 156,
       retweets: 47,
@@ -169,7 +169,6 @@ export default function TwitterFeed() {
     { id: "announcement", name: "Announcements", icon: <ArrowRight className="w-4 h-4" /> },
     { id: "update", name: "Updates", icon: <RefreshCw className="w-4 h-4" /> },
     { id: "community", name: "Community", icon: <TwitterIcon className="w-4 h-4" /> },
-    { id: "education", name: "Education", icon: <ArrowRight className="w-4 h-4" /> },
     { id: "tip", name: "Tips", icon: <Star className="w-4 h-4" /> },
     { id: "security", name: "Security", icon: <ArrowRight className="w-4 h-4" /> },
   ];
@@ -228,7 +227,7 @@ export default function TwitterFeed() {
                 >
                   <Image 
                     src="/logo.webp" 
-                    alt="AI Wallet Logo" 
+                    alt="INTELIQ Logo" 
                     width={32} 
                     height={32} 
                     className="rounded-full object-cover z-10"
@@ -236,7 +235,7 @@ export default function TwitterFeed() {
                 </motion.div>
               </div>
               <h1 className="text-xl font-bold tracking-tight">
-                <span className="text-primary">AI</span> Wallet
+                <span className="text-primary">INTEL</span>IQ
               </h1>
             </Link>
           </motion.div>
@@ -249,6 +248,9 @@ export default function TwitterFeed() {
           >
             <NavLink href="/" active={pathname === "/"}>
               Home
+            </NavLink>
+            <NavLink href="/roadmap" active={pathname === "/roadmap"}>
+              Roadmap
             </NavLink>
             <NavLink href="/past-updates" active={pathname === "/past-updates"}>
               Updates
@@ -355,8 +357,8 @@ export default function TwitterFeed() {
                           </div>
                         </div>
                         <div>
-                          <div className="font-bold">AI Wallet</div>
-                          <div className="text-xs text-muted-foreground">@AIWallet</div>
+                          <div className="font-bold">INTELIQ</div>
+                          <div className="text-xs text-muted-foreground">@INTELIQ</div>
                         </div>
                       </div>
 
@@ -430,7 +432,7 @@ export default function TwitterFeed() {
 
             <div>
               <motion.a
-                href="https://twitter.com/AIWallet"
+                href="https://twitter.com/INTELIQ"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.03 }}
@@ -438,7 +440,7 @@ export default function TwitterFeed() {
                 className="px-6 py-3 rounded-lg flex items-center space-x-2 bg-[#1da1f2] text-white hover:bg-[#1a91da] transition-colors"
               >
                 <TwitterIcon className="w-5 h-5" />
-                <span>Follow @AIWallet</span>
+                <span>Follow @INTELIQ</span>
               </motion.a>
             </div>
           </div>
@@ -456,14 +458,14 @@ export default function TwitterFeed() {
                 >
                   <Image 
                     src="/logo.webp" 
-                    alt="AI Wallet Logo" 
+                    alt="INTELIQ Logo" 
                     width={24} 
                     height={24} 
                     className="rounded-full object-cover"
                   />
                 </motion.div>
               </div>
-              <p className="text-sm">© 2023 AI Wallet. All rights reserved.</p>
+              <p className="text-sm">© 2023 INTELIQ. All rights reserved.</p>
             </div>
 
             <div className="flex space-x-6">

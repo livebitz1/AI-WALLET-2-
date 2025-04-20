@@ -403,7 +403,7 @@ export class WalletDataProvider {
   /**
    * Determine transaction type
    */
-  private static determineTransactionType(tx: any): string {
+  static determineTransactionType(tx: any): string {
     if (!tx || !tx.transaction || !tx.transaction.message) return "unknown";
     
     const instructions = tx.transaction.message.instructions || [];
@@ -443,7 +443,7 @@ export class WalletDataProvider {
   /**
    * Extract token info from transaction
    */
-  private static extractTokenInfo(tx: any): {fromToken: string, toToken: string, amount: string} {
+  static extractTokenInfo(tx: any): {fromToken: string, toToken: string, amount: string} {
     // Default values
     let fromToken = "SOL";
     let toToken = "";

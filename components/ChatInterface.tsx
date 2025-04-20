@@ -20,6 +20,9 @@ import { TransferExecutor } from '@/components/TransferExecutor';
 import { TransactionConfirmationModal } from '@/components/TransactionConfirmationModal';
 import { TokenTransferService } from '@/lib/token-transfer-service';
 import { detectSolanaAddress } from '@/lib/wallet-address-utils';
+import { cryptoMarketService, CryptoMarketData } from '@/lib/services/crypto-market-service';
+import { generateMarketIntelligence } from '@/lib/modules/crypto-market-intelligence';
+import { getCoinInfo, searchCoins } from '@/lib/modules/crypto-knowledge-base';
 
 // SuggestionChip component for interactive suggestion buttons
 const SuggestionChip = ({ suggestion, onSelect }: { suggestion: string; onSelect: (s: string) => void }) => (
@@ -147,6 +150,11 @@ export function ChatInterface() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
+  // Add state for crypto market data
+  const [marketData, setMarketData] = useState<CryptoMarketData[]>([]);
+  const [marketDataLoaded, setMarketDataLoaded] = useState(false);
+  const [lastMarketUpdate, setLastMarketUpdate] = useState<Date | null>(null);
+  
   // New state variables to control scroll behavior
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -161,6 +169,54 @@ export function ChatInterface() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [transferIntent, setTransferIntent] = useState<any>(null);
   const [autoExecuteTransfer, setAutoExecuteTransfer] = useState<boolean>(false);
+
+  // Fetch crypto market data
+  useEffect(() => {
+    const fetchMarketData = async () => {
+      try {
+        const data = await cryptoMarketService.getTopCoins(30);
+        setMarketData(data);
+        setMarketDataLoaded(true);
+        setLastMarketUpdate(new Date());
+      } catch (error) {
+        console.error("Error fetching market data:", error);
+      }
+    };
+
+    // Initial fetch
+    fetchMarketData();
+
+    // Set up interval to refresh data
+    const intervalId = setInterval(fetchMarketData, 2 * 60 * 1000); // Every 2 minutes
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  // Update suggestions to include market-related questions once market data is loaded
+  useEffect(() => {
+    if (marketDataLoaded && !messages.some(m => m.content.includes("cryptocurrency prices"))) {
+      // Add a subtle hint about crypto data capabilities after the welcome message
+      setTimeout(() => {
+        setMessages(prev => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "I can also provide you with real-time cryptocurrency prices and market trends. Feel free to ask me about Bitcoin, Ethereum, or any other major cryptocurrency!"
+          }
+        ]);
+        
+        // Update suggestions to include market-related queries
+        setSuggestions([
+          "What's the price of Bitcoin?",
+          "How is the crypto market doing?",
+          "Show me top performing coins",
+          "Tell me about Solana"
+        ]);
+      }, 1000);
+    }
+  }, [marketDataLoaded, messages]);
 
   // Determine if user is at bottom of chat
   const isNearBottom = useCallback(() => {
@@ -266,6 +322,55 @@ export function ChatInterface() {
     setInput(e.target.value);
   };
 
+  // Add a function to generate coin information responses
+  const generateCoinInfoResponse = (symbol: string): string | null => {
+    const coinInfo = getCoinInfo(symbol);
+    if (!coinInfo) return null;
+    
+    // Find market data if available
+    const marketInfo = marketData.find(coin => 
+      coin.symbol.toUpperCase() === symbol.toUpperCase()
+    );
+    
+    let response = `## ${coinInfo.name} (${coinInfo.symbol})\n\n`;
+    response += `${coinInfo.description}\n\n`;
+    
+    response += `**Category:** ${coinInfo.category}\n`;
+    if (coinInfo.blockchain) {
+      response += `**Blockchain:** ${coinInfo.blockchain}\n`;
+    }
+    if (coinInfo.launchYear) {
+      response += `**Launched:** ${coinInfo.launchYear}\n`;
+    }
+    
+    response += `\n**Primary Use Cases:**\n`;
+    coinInfo.useCase.forEach(use => {
+      response += `- ${use}\n`;
+    });
+    
+    if (coinInfo.features) {
+      response += `\n**Key Features:**\n`;
+      coinInfo.features.forEach(feature => {
+        response += `- ${feature}\n`;
+      });
+    }
+    
+    if (marketInfo) {
+      response += `\n**Current Market Data:**\n`;
+      response += `- Price: $${marketInfo.price.toFixed(6)}\n`;
+      response += `- 24h Change: ${marketInfo.percentChange24h > 0 ? '+' : ''}${marketInfo.percentChange24h.toFixed(2)}%\n`;
+      if (marketInfo.marketCap) {
+        response += `- Market Cap: $${(marketInfo.marketCap / 1000000).toFixed(2)}M\n`;
+      }
+    }
+    
+    if (coinInfo.additionalInfo) {
+      response += `\n${coinInfo.additionalInfo}`;
+    }
+    
+    return response;
+  };
+
   const handleSendMessage = async () => {
     if (input.trim() === "" || isProcessing) return;
 
@@ -282,11 +387,82 @@ export function ChatInterface() {
     setIsProcessing(true);
 
     try {
-      // Send message to AI
+      // Check if this is a coin info request like "What is SOL?" or "Tell me about Bitcoin"
+      const coinRegex = /what (?:is|are) ([A-Za-z0-9]+)|\b(?:tell|explain|info|information) (?:me )?(?:about )?\b([A-Za-z0-9]+)/i;
+      const match = userMessage.match(coinRegex);
+      
+      if (match) {
+        const symbol = (match[1] || match[2]).toUpperCase();
+        const coinResponse = generateCoinInfoResponse(symbol);
+        
+        if (coinResponse) {
+          // If we have coin info, use it directly
+          setMessages(prev => [
+            ...prev,
+            { role: "assistant", content: coinResponse }
+          ]);
+          
+          // Update suggestions
+          setSuggestions([
+            `What's the price of ${symbol}?`,
+            "Show me top coins",
+            "What's another coin like this?",
+            "How is the market today?"
+          ]);
+          
+          setIsProcessing(false);
+          return;
+        }
+      }
+
+      // Check if this is a market-related query and we have market data
+      if (marketData.length > 0) {
+        // Update to use async version of generateMarketIntelligence
+        const marketIntelligence = await generateMarketIntelligence(userMessage, marketData);
+        
+        if (marketIntelligence) {
+          // If we have market intelligence, use it directly
+          setMessages(prev => [
+            ...prev,
+            { role: "assistant", content: marketIntelligence }
+          ]);
+          
+          // Update suggestions based on market context
+          if (userMessage.toLowerCase().includes('price')) {
+            setSuggestions([
+              "How's the market today?",
+              "Show me technical analysis",
+              "Top performing coins",
+              "Price chart"
+            ]);
+          } else if (userMessage.toLowerCase().includes('market') || userMessage.toLowerCase().includes('trend')) {
+            setSuggestions([
+              "Top gainers today",
+              "Top losers today",
+              "What's the price of Bitcoin?",
+              "Technical analysis of ETH"
+            ]);
+          } else {
+            setSuggestions([
+              "Show me more coins",
+              "How is the overall market?",
+              "What's the price of Ethereum?",
+              "Tell me about Solana"
+            ]);
+          }
+          
+          setIsProcessing(false);
+          return;
+        }
+      }
+
+      // If not a market query or no market data available, proceed with the regular AI
       const aiResponse = await parseUserIntent(userMessage, {
         walletConnected: connected,
         walletAddress: publicKey?.toString() || null,
         balance: walletData.solBalance || 0,
+        marketData: marketData, // Pass market data to the AI
+        lastMarketUpdate: lastMarketUpdate ? lastMarketUpdate.toISOString() : null
       });
 
       // Handle AI response
@@ -345,6 +521,18 @@ export function ChatInterface() {
     } else {
       setTransferIntent(null);
     }
+    
+    // If the response has a market data request, refresh market data
+    if (response.intent?.action === "marketData" && response.intent?.refresh === true) {
+      try {
+        await cryptoMarketService.refreshData();
+        const freshData = await cryptoMarketService.getTopCoins(30);
+        setMarketData(freshData);
+        setLastMarketUpdate(new Date());
+      } catch (error) {
+        console.error("Failed to refresh market data:", error);
+      }
+    }
   };
 
   const handleSwapSuccess = (result: any) => {
@@ -390,7 +578,6 @@ export function ChatInterface() {
     } catch (error) {
       console.error("Error executing transfer:", error);
       
-   
     } finally {
       setIsExecuting(false);
       setIsConfirmationOpen(false);
@@ -402,9 +589,6 @@ export function ChatInterface() {
       console.error("Cannot execute transfer: missing intent or wallet not connected");
       return;
     }
-    
-    // Add a pending message
-   
     
     try {
       const result = await TokenTransferService.transferTokens(
@@ -424,8 +608,6 @@ export function ChatInterface() {
         
         // Refresh wallet data
         await refreshWalletData();
-      } else {
-        
       }
     } catch (error) {
       console.error("Error executing transfer:", error);
@@ -480,6 +662,9 @@ export function ChatInterface() {
                 {connected 
                   ? `Connected to ${formatWalletAddress(publicKey!.toString())}` 
                   : "Wallet not connected"}
+                {marketDataLoaded && (
+                  <span className="ml-2">• Market data: <span className="text-green-500">Live</span></span>
+                )}
               </p>
             </div>
           </div>
@@ -633,7 +818,6 @@ export function ChatInterface() {
             }}
             onError={(error) => {
               // Add an error message to the chat
-           
               setTransferIntent(null);
               setAutoExecuteTransfer(false); // Reset auto-execute flag
             }}

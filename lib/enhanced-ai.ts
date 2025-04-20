@@ -5,6 +5,7 @@ import { estimateSwapValue, getTokenPrice } from "@/lib/price-oracle";
 import { detectSolanaAddress, isValidSolanaAddress } from './wallet-address-utils';
 import { parseTransferCommand } from './transfer-command-parser';
 import { knowledgeService } from './services/knowledge-service';
+import { TransactionHistoryService } from './transaction-history-service';
 
 // Enhanced token information database with market trends
 const TOKEN_INFO = {
@@ -487,8 +488,11 @@ export const OPERATIONS = {
       /(?:my|wallet)\s+(?:transaction|tx)\s+history/i,
       /(?:recent|last|previous)\s+transactions/i,
       /what\s+(?:did|have)\s+i\s+(?:do|done|transact)/i,
+      /transactions\s+(?:on|from|for|during|in)\s+(.+?)(?:\s|$)/i,
+      /what\s+(?:happened|occurred|took place)\s+(?:on|from|for|during|in)\s+(.+?)(?:\s|$)/i,
+      /show\s+me\s+(?:transactions|activity)\s+(?:on|from|for|during|in)\s+(.+?)(?:\s|$)/i,
     ],
-    handler: async (_: RegExpMatchArray, context: any) => {
+    handler: async (matches: RegExpMatchArray, context: any) => {
       if (!context.walletConnected) {
         return {
           message: "Please connect your wallet first to view your transaction history.",
@@ -497,11 +501,87 @@ export const OPERATIONS = {
       }
       
       try {
-        const history = await getWalletHistory(context.walletAddress);
+        // Check if we have a date-specific query
+        let dateSpecificQuery = false;
+        let dateText = '';
         
-        if (!history || history.length === 0) {
+        // Extract date information if present in the query
+        const datePatterns = [
+          /(?:on|from|for|during|in)\s+(.+?)(?:\s|$)/i,
+          /(.+?)\s+transactions/i,
+        ];
+        
+        for (const pattern of datePatterns) {
+          const match = matches.input?.match(pattern);
+          if (match && match[1]) {
+            dateText = match[1].trim();
+            dateSpecificQuery = true;
+            break;
+          }
+        }
+        
+        // Parse the date query and build transaction query
+        const query: any = { limit: 10 };
+        
+        if (dateSpecificQuery) {
+          const dateRange = TransactionHistoryService.parseDateQuery(dateText);
+          if (dateRange.startDate || dateRange.endDate) {
+            query.dateRange = dateRange;
+          }
+        }
+        
+        // Check for token mentions
+        const tokenPatterns = [
+          /\b(sol|usdc|bonk|jup|usdt|wif|meme|jto)\b/gi,
+        ];
+        
+        for (const pattern of tokenPatterns) {
+          const match = matches.input?.match(pattern);
+          if (match && match[0]) {
+            query.token = match[0].toUpperCase();
+            break;
+          }
+        }
+        
+        // Check for transaction type mentions
+        const typePatterns = [
+          /\b(swap|transfer|send|receive)\b/i,
+        ];
+        
+        for (const pattern of typePatterns) {
+          const match = matches.input?.match(pattern);
+          if (match && match[0]) {
+            const type = match[0].toLowerCase();
+            query.type = type === 'send' || type === 'receive' ? 'transfer' : type;
+            break;
+          }
+        }
+        
+        // Fetch transactions based on the query
+        const transactions = await TransactionHistoryService.getTransactionsForDateRange(
+          context.walletAddress,
+          query
+        );
+        
+        if (!transactions || transactions.length === 0) {
+          let message = "I couldn't find any transactions";
+          
+          if (dateSpecificQuery) {
+            message += ` for ${dateText}`;
+          }
+          
+          if (query.token) {
+            message += ` involving ${query.token}`;
+          }
+          
+          if (query.type) {
+            message += ` of type ${query.type}`;
+          }
+          
+          message += ". This could be because there was no activity during this period, or the transaction history is not available through the API.";
+          
           return {
-            message: "I couldn't find any recent transactions for your wallet. This could be because your wallet is new or the transaction history is not available through the API.",
+            message,
             intent: {
               action: "history",
               success: false
@@ -509,21 +589,36 @@ export const OPERATIONS = {
           };
         }
         
-        const formattedHistory = history.slice(0, 5).map((tx: any, index: number) => {
-          let description = tx.description || "Unknown transaction";
-          const date = new Date(tx.timestamp * 1000).toLocaleString();
-          
-          return `${index + 1}. ${description} - ${date}`;
-        }).join("\n");
+        // Format transaction data for display
+        const formattedHistory = TransactionHistoryService.formatTransactionsForDisplay(
+          transactions
+        );
         
-        const message = `Here are your most recent transactions:\n\n${formattedHistory}\n\nYou can see your full transaction history on Solana Explorer: https://explorer.solana.com/address/${context.walletAddress}`;
+        // Build response message
+        let message = "Here are ";
+        
+        if (dateSpecificQuery) {
+          message += `your transactions for ${dateText}`;
+        } else {
+          message += "your recent transactions";
+        }
+        
+        if (query.token) {
+          message += ` involving ${query.token}`;
+        }
+        
+        if (query.type) {
+          message += ` of type ${query.type}`;
+        }
+        
+        message += `:\n\n${formattedHistory}\n\nYou can see your full transaction history on Solana Explorer: https://explorer.solana.com/address/${context.walletAddress}`;
         
         return {
           message: message,
           intent: {
             action: "history",
             success: true,
-            transactions: history.slice(0, 5)
+            transactions: transactions
           }
         };
       } catch (error) {

@@ -12,6 +12,7 @@ import { SubscriptionCards } from "@/components/SubscriptionCards";
 import { SplashScreen } from "@/components/SplashScreen";
 import { QuickCommandBar } from "@/components/QuickCommandBar";
 import { CommandPalette } from "@/components/CommandPalette";
+import { ContactFormPopup } from "@/components/ContactFormPopup"; // Import the new component
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletStore } from "@/lib/wallet-store";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,7 +22,7 @@ import Image from "next/image";
 import { 
   Search, Command, ArrowRight, Zap, Send, Wallet, ArrowLeftRight, 
   Repeat, History, HelpCircle, DollarSign, Settings, BarChart2, 
-  PieChart, Loader, Info, AlertCircle, X, ChevronRight
+  PieChart, Loader, Info, AlertCircle, X, ChevronRight, Mail
 } from "lucide-react";
 
 export default function Home() {
@@ -129,7 +130,6 @@ export default function Home() {
           name: "Transaction history", 
           description: "View your recent transactions", 
           icon: <History className="w-4 h-4" />,
-          shortcut: "Alt+H",
           action: () => {
             insertCommand("Show my transaction history");
             closeCommandPalette();
@@ -306,6 +306,9 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const [showContactForm, setShowContactForm] = useState(false);
+  const contactButtonRef = useRef<HTMLDivElement>(null);
+
   if (showSplash) {
     return <SplashScreen onComplete={handleSplashComplete} />;
   }
@@ -345,7 +348,7 @@ export default function Home() {
                 >
                   <Image 
                     src="/logo.webp" 
-                    alt="AI Wallet Logo" 
+                    alt="INTELIQ Logo" 
                     width={32} 
                     height={32} 
                     className="rounded-full object-cover z-10"
@@ -353,7 +356,7 @@ export default function Home() {
                 </motion.div>
               </div>
               <h1 className="text-xl font-bold tracking-tight">
-                <span className="text-primary">AI</span> Wallet
+                <span className="text-primary">INTEL</span>IQ
               </h1>
             </Link>
           </motion.div>
@@ -375,22 +378,40 @@ export default function Home() {
                 </span>
               </div>
             </NavLink>
-            <NavLink href="/past-updates" active={pathname === "/roadmap"}>
+            <NavLink href="/past-updates" active={pathname === "/past-updates"}>
               <div className="flex items-center">
-                <span className="mr-1.5">Past-Updates</span>
+                <span className="mr-1.5">Updates</span>
                 <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary">
                   New
                 </span>
               </div>
             </NavLink>
-            <NavLink href="/twitter-feed" active={pathname === "/roadmap"}>
+            <NavLink href="/twitter-feed" active={pathname === "/twitter-feed"}>
               <div className="flex items-center">
-                <span className="mr-1.5">Twitter-Feed</span>
+                <span className="mr-1.5">Twitter</span>
                 <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary">
                   New
                 </span>
               </div>
             </NavLink>
+            
+            {/* Change to onClick instead of hover */}
+            <div className="relative" ref={contactButtonRef}>
+              <div onClick={() => setShowContactForm(!showContactForm)}>
+                <NavLink href="#" active={false}>
+                  <div className="flex items-center">
+                    <Mail className="mr-1.5 w-4 h-4" />
+                    <span>Contact</span>
+                  </div>
+                </NavLink>
+              </div>
+              
+              <AnimatePresence>
+                {showContactForm && (
+                  <ContactFormPopup onClose={() => setShowContactForm(false)} />
+                )}
+              </AnimatePresence>
+            </div>
           </motion.nav>
 
           <div className="md:hidden flex items-center">
@@ -698,14 +719,14 @@ export default function Home() {
                 >
                   <Image 
                     src="/logo.webp" 
-                    alt="AI Wallet Logo" 
+                    alt="INTELIQ Logo" 
                     width={24} 
                     height={24} 
                     className="rounded-full object-cover"
                   />
                 </motion.div>
               </div>
-              <p className="text-sm">© 2023 AI Wallet. All rights reserved.</p>
+              <p className="text-sm">© 2023 INTELIQ. All rights reserved.</p>
             </div>
 
             <div className="flex space-x-6">
