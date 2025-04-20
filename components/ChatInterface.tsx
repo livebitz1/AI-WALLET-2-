@@ -23,6 +23,7 @@ import { detectSolanaAddress } from '@/lib/wallet-address-utils';
 import { cryptoMarketService, CryptoMarketData } from '@/lib/services/crypto-market-service';
 import { generateMarketIntelligence } from '@/lib/modules/crypto-market-intelligence';
 import { getCoinInfo, searchCoins } from '@/lib/modules/crypto-knowledge-base';
+import { fetchTokenData } from '@/lib/services/token-data-service';
 
 // SuggestionChip component for interactive suggestion buttons
 const SuggestionChip = ({ suggestion, onSelect }: { suggestion: string; onSelect: (s: string) => void }) => (
@@ -41,13 +42,11 @@ const SuggestionChip = ({ suggestion, onSelect }: { suggestion: string; onSelect
 // Message component with support for markdown, code highlighting, and copy functionality
 const ChatMessage = ({ message, isLast }: { message: AIMessage; isLast: boolean }) => {
   const [copied, setCopied] = useState(false);
-
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -69,7 +68,6 @@ const ChatMessage = ({ message, isLast }: { message: AIMessage; isLast: boolean 
           </div>
         )}
       </div>
-
       {/* Message content */}
       <div className="flex-1 overflow-hidden">
         <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -110,7 +108,6 @@ const ChatMessage = ({ message, isLast }: { message: AIMessage; isLast: boolean 
           </ReactMarkdown>
         </div>
       </div>
-
       {/* Copy button for assistant messages */}
       {message.role === "assistant" && (
         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -149,27 +146,22 @@ export function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  
   // Add state for crypto market data
   const [marketData, setMarketData] = useState<CryptoMarketData[]>([]);
   const [marketDataLoaded, setMarketDataLoaded] = useState(false);
   const [lastMarketUpdate, setLastMarketUpdate] = useState<Date | null>(null);
-  
   // New state variables to control scroll behavior
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [lastMessageCount, setLastMessageCount] = useState(messages.length);
-
   // Add state for pending swap intent
   const [pendingSwapIntent, setPendingSwapIntent] = useState<SwapIntent | null>(null);
   const [autoExecuteSwap, setAutoExecuteSwap] = useState<boolean>(false);
-
   // Add these states if they don't already exist
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [transferIntent, setTransferIntent] = useState<any>(null);
   const [autoExecuteTransfer, setAutoExecuteTransfer] = useState<boolean>(false);
-
   // Fetch crypto market data
   useEffect(() => {
     const fetchMarketData = async () => {
@@ -182,18 +174,14 @@ export function ChatInterface() {
         console.error("Error fetching market data:", error);
       }
     };
-
     // Initial fetch
     fetchMarketData();
-
     // Set up interval to refresh data
     const intervalId = setInterval(fetchMarketData, 2 * 60 * 1000); // Every 2 minutes
-
     return () => {
       clearInterval(intervalId);
     };
   }, []);
-
   // Update suggestions to include market-related questions once market data is loaded
   useEffect(() => {
     if (marketDataLoaded && !messages.some(m => m.content.includes("cryptocurrency prices"))) {
@@ -203,16 +191,15 @@ export function ChatInterface() {
           ...prev,
           {
             role: "assistant",
-            content: "I can also provide you with real-time cryptocurrency prices and market trends. Feel free to ask me about Bitcoin, Ethereum, or any other major cryptocurrency!"
+            content: "I can also provide you with real-time cryptocurrency prices and market trends. Feel free to ask me about Bitcoin, Ethereum, or any other major cryptocurrency! You can even paste token contract addresses from Ethereum, BSC, or Solana to get detailed information."
           }
         ]);
-        
         // Update suggestions to include market-related queries
         setSuggestions([
           "What's the price of Bitcoin?",
           "How is the crypto market doing?",
           "Show me top performing coins",
-          "Tell me about Solana"
+          "Analyze this: 0x2260fac5e5542a773aa44fbcfedf7c193bc2c599" // Example WBTC address
         ]);
       }, 1000);
     }
@@ -387,14 +374,95 @@ export function ChatInterface() {
     setIsProcessing(true);
 
     try {
+      // Check if message contains a contract address
+      const ethereumAddressRegex = /0x[a-fA-F0-9]{40}/;
+      const solanaAddressRegex = /[1-9A-HJ-NP-Za-km-z]{32,44}/;
+      
+      // Look for Ethereum/BSC addresses first
+      const ethMatch = userMessage.match(ethereumAddressRegex);
+      if (ethMatch) {
+        const contractAddress = ethMatch[0];
+        
+        // Show loading message
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: `Analyzing token contract \`${contractAddress}\`. Let me fetch some data for you...`
+        }]);
+        
+        try {
+          const tokenData = await fetchTokenData(contractAddress, "ethereum");
+          
+          // Replace loading message with actual data
+          setMessages(prev => {
+            const newMessages = [...prev];
+            newMessages[newMessages.length - 1] = {
+              role: "assistant",
+              content: tokenData || "I couldn't find any data for this token contract."
+            };
+            return newMessages;
+          });
+          
+          // Update suggestions based on token context
+          setSuggestions([
+            "What's your opinion on this token?",
+            "Show me another token",
+            "Is this token trading on major exchanges?"
+          ]);
+          
+          setIsProcessing(false);
+          return;
+        } catch (error) {
+          console.error("Error fetching token data:", error);
+          // Continue with other processing if token fetch fails
+        }
+      }
+      
+      // Look for Solana addresses
+      const solMatch = userMessage.match(solanaAddressRegex);
+      if (solMatch) {
+        const potentialAddress = solMatch[0];
+        // Simple validation - actual validation would be more complex
+        if (potentialAddress.length >= 32 && potentialAddress.length <= 44) {
+          // Show loading message
+          setMessages(prev => [...prev, {
+            role: "assistant",
+            content: `Analyzing Solana token \`${potentialAddress}\`. Let me fetch some data for you...`
+          }]);
+          
+          try {
+            const tokenData = await fetchTokenData(potentialAddress, "solana");
+            
+            // Replace loading message with actual data
+            setMessages(prev => {
+              const newMessages = [...prev];
+              newMessages[newMessages.length - 1] = {
+                role: "assistant",
+                content: tokenData || "I couldn't find any data for this Solana token."
+              };
+              return newMessages;
+            });
+            
+            setSuggestions([
+              "Tell me more about Solana tokens",
+              "How does this compare to Ethereum tokens?",
+              "Show me trending Solana tokens"
+            ]);
+            
+            setIsProcessing(false);
+            return;
+          } catch (error) {
+            console.error("Error fetching Solana token data:", error);
+            // Continue with other processing if token fetch fails
+          }
+        }
+      }
+
       // Check if this is a coin info request like "What is SOL?" or "Tell me about Bitcoin"
       const coinRegex = /what (?:is|are) ([A-Za-z0-9]+)|\b(?:tell|explain|info|information) (?:me )?(?:about )?\b([A-Za-z0-9]+)/i;
       const match = userMessage.match(coinRegex);
-      
       if (match) {
         const symbol = (match[1] || match[2]).toUpperCase();
         const coinResponse = generateCoinInfoResponse(symbol);
-        
         if (coinResponse) {
           // If we have coin info, use it directly
           setMessages(prev => [
@@ -402,10 +470,9 @@ export function ChatInterface() {
             { role: "assistant", content: coinResponse }
           ]);
           
-          // Update suggestions
+          // Update suggestions to include market-related queries
           setSuggestions([
             `What's the price of ${symbol}?`,
-            "Show me top coins",
             "What's another coin like this?",
             "How is the market today?"
           ]);
@@ -431,20 +498,14 @@ export function ChatInterface() {
           if (userMessage.toLowerCase().includes('price')) {
             setSuggestions([
               "How's the market today?",
-              "Show me technical analysis",
-              "Top performing coins",
-              "Price chart"
             ]);
           } else if (userMessage.toLowerCase().includes('market') || userMessage.toLowerCase().includes('trend')) {
             setSuggestions([
-              "Top gainers today",
-              "Top losers today",
               "What's the price of Bitcoin?",
               "Technical analysis of ETH"
             ]);
           } else {
             setSuggestions([
-              "Show me more coins",
               "How is the overall market?",
               "What's the price of Ethereum?",
               "Tell me about Solana"
@@ -561,9 +622,7 @@ export function ChatInterface() {
 
   const handleConfirmTransfer = async () => {
     if (!transferIntent) return;
-    
     setIsExecuting(true);
-    
     try {
       // Add a pending message to show the user that something is happening
       setMessages(prev => [...prev, {
@@ -611,7 +670,6 @@ export function ChatInterface() {
       }
     } catch (error) {
       console.error("Error executing transfer:", error);
-   
     } finally {
       setTransferIntent(null);
     }
@@ -636,7 +694,7 @@ export function ChatInterface() {
       setTransferIntent(null);
       return;
     }
-
+    
     setInput(suggestion);
     // Focus and move cursor to end
     if (inputRef.current) {
@@ -697,7 +755,6 @@ export function ChatInterface() {
                 isLast={index === messages.length - 1} 
               />
             ))}
-            
             {/* Loading indicator */}
             {isProcessing && (
               <div className="py-6 px-6 flex gap-4">
@@ -737,7 +794,7 @@ export function ChatInterface() {
             )}
           </AnimatePresence>
         </div>
-        
+
         {/* Suggestions */}
         <div className="px-4 py-3 border-t border-border/40 bg-muted/20 backdrop-blur-sm">
           <AnimatePresence mode="wait">
@@ -758,7 +815,7 @@ export function ChatInterface() {
             </motion.div>
           </AnimatePresence>
         </div>
-        
+
         {/* Input area */}
         <div className="p-4 border-t border-border/40 bg-card/80">
           <div className="relative flex items-end">
@@ -818,6 +875,10 @@ export function ChatInterface() {
             }}
             onError={(error) => {
               // Add an error message to the chat
+              setMessages(prev => [...prev, {
+                role: "assistant",
+                content: `❌ Transfer failed: ${error.message || "Please try again."}`
+              }]);
               setTransferIntent(null);
               setAutoExecuteTransfer(false); // Reset auto-execute flag
             }}
