@@ -6,8 +6,40 @@ import { Notifications } from "@/components/Notifications";
 import { NotificationToast } from "@/components/NotificationToast";
 
 export const metadata: Metadata = {
-  title: "Web3 AI Wallet",
+  title: "INTELIQ",
   description: "AI-powered Web3 wallet with natural language transaction support",
+  icons: {
+    icon: [
+      { url: "/logo.webp", type: "image/webp" }
+    ],
+    apple: [
+      { url: "/logo.webp", type: "image/webp" }
+    ],
+    shortcut: [
+      { url: "/logo.webp", type: "image/webp" }
+    ],
+    other: [
+      {
+        rel: "apple-touch-icon-precomposed",
+        url: "/logo.webp",
+      }
+    ]
+  },
+  manifest: "/manifest.json",
+  openGraph: {
+    images: [
+      {
+        url: "/logo.webp",
+        width: 800,
+        height: 600,
+        alt: "INTELIQ Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/logo.webp"],
+  },
 };
 
 export default function RootLayout({

@@ -145,7 +145,6 @@ export function QuickCommandBar({ insertCommand }: QuickCommandBarProps) {
       description: "View your current holdings and balances",
       category: "wallet", 
       color: "from-blue-500/30 to-cyan-500/30",
-      hotkey: "Alt+B" 
     },
     { 
       name: "Send SOL", 
@@ -178,7 +177,6 @@ export function QuickCommandBar({ insertCommand }: QuickCommandBarProps) {
       description: "View your recent wallet transactions",
       category: "wallet", 
       color: "from-indigo-500/30 to-violet-500/30",
-      hotkey: "Alt+H" 
     },
     { 
       name: "Portfolio", 
@@ -226,11 +224,11 @@ export function QuickCommandBar({ insertCommand }: QuickCommandBarProps) {
     }
   }, { enableOnFormTags: true });
 
-  useKeyboardShortcut('alt+b', () => {
+  useKeyboardShortcut('', () => {
     handleInsertCommand(allCommands.find(cmd => cmd.name === "Check balance")?.command || "");
   }, { enableOnFormTags: false });
 
-  useKeyboardShortcut('alt+h', () => {
+  useKeyboardShortcut('', () => {
     handleInsertCommand(allCommands.find(cmd => cmd.name === "Transaction history")?.command || "");
   }, { enableOnFormTags: false });
 

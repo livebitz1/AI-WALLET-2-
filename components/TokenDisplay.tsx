@@ -33,16 +33,16 @@ export function TokenDisplay() {
   });
 
   return (
-    <Card className="border-border/40 shadow-lg overflow-hidden">
-      <CardHeader className="pb-3">
+    <Card className="border-border/40 shadow-lg overflow-hidden h-full flex flex-col">
+      <CardHeader className="pb-3 flex-shrink-0">
         <CardTitle>Token Portfolio</CardTitle>
         <CardDescription>
           Total Value: {formatCurrency(walletData.totalValueUsd || 0)}
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
-        <div className="relative flex flex-col space-y-2 min-h-[200px]">
+      <CardContent className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
+        <div className="relative flex flex-col space-y-2">
           <AnimatePresence>
             {sortedTokens.map((token, i) => (
               <motion.div

@@ -186,14 +186,9 @@ export function TransactionHistory() {
   };
 
   return (
-    <div className="rounded-xl border border-border/40 bg-gradient-to-b from-card to-card/95 p-5 shadow-lg hover:shadow-xl transition-all h-full flex flex-col relative overflow-hidden">
-      <div className="absolute -right-12 -top-12 w-40 h-40 bg-blue-500/5 rounded-full blur-3xl"></div>
-      <div className="absolute -left-12 -bottom-12 w-40 h-40 bg-orange-500/5 rounded-full blur-3xl"></div>
-
-      <div className="flex items-center justify-between mb-4 relative z-10">
-        <h3 className="text-base font-medium flex items-center gap-2 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80">
-          Transaction History
-        </h3>
+    <div className="rounded-xl border border-border/40 bg-card shadow-lg transition-all hover:shadow-xl hover:border-primary/20 overflow-hidden backdrop-blur-sm flex flex-col">
+      <div className="p-4 border-b border-border/40 flex justify-between items-center flex-shrink-0">
+        <h3 className="text-base font-medium">Transaction History</h3>
 
         {loading ? (
           <motion.div
@@ -223,14 +218,14 @@ export function TransactionHistory() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar relative z-10">
+      <div className="divide-y divide-border/40 flex-1 overflow-y-auto h-[calc(100vh-200px)] min-h-0 custom-scrollbar">
         {transactions.length === 0 && !loading ? (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center h-full text-muted-foreground py-8 px-2"
+            className="flex flex-col items-center justify-center h-full text-muted-foreground py-4 px-2"
           >
-            <div className="relative mb-4">
+            <div className="relative mb-2">
               <motion.div
                 animate={{ 
                   y: [0, -5, 0],
@@ -243,21 +238,21 @@ export function TransactionHistory() {
                 }}
                 className="absolute inset-0 bg-orange-500/10 rounded-full blur-xl"
               ></motion.div>
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
                 <rect width="18" height="18" x="3" y="3" rx="2" />
                 <path d="M3 9h18" />
                 <path d="M9 21V9" />
               </svg>
             </div>
-            <p className="text-sm font-medium">No transactions yet</p>
-            <p className="text-xs text-center mt-1 max-w-[200px]">Your transaction history will appear here when you make transfers</p>
+            <p className="text-xs font-medium">No transactions yet</p>
+            <p className="text-xs text-center mt-0.5 max-w-[180px]">Your transaction history will appear here</p>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleRefresh}
-              className="mt-4 text-xs py-2 px-4 bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors flex items-center gap-2"
+              className="mt-2 text-xs py-1.5 px-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors flex items-center gap-1.5"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
                 <path d="M21 3v5h-5" />
               </svg>
@@ -266,87 +261,75 @@ export function TransactionHistory() {
           </motion.div>
         ) : (
           <AnimatePresence>
-            {groupTransactionsByDate(transactions).map(([date, txs]) => (
-              <div key={date} className="mb-4 last:mb-0">
-                <div className="sticky top-0 z-10 backdrop-blur-sm bg-background/60">
-                  <h4 className="text-xs font-medium uppercase text-muted-foreground mb-2 pb-1 border-b border-border/20">{date}</h4>
-                </div>
-                <div className="space-y-2.5">
-                  {txs.map((tx, i) => (
-                    <motion.div
-                      key={tx.signature}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.3, delay: i * 0.05 }}
-                      className="group flex items-center p-3 rounded-xl hover:bg-primary/5 transition-all border border-border/20 hover:border-primary/20 bg-card/40 backdrop-blur-sm shadow-sm hover:shadow-md cursor-pointer"
-                      onClick={() => window.open(`https://explorer.solana.com/tx/${tx.signature}`, '_blank')}
-                    >
-                      {getTransactionIcon(tx.type)}
-                      <div className="ml-3 flex-1 min-w-0">
-                        <div className="flex justify-between items-center">
-                          <p className="font-semibold text-sm truncate capitalize group-hover:text-primary transition-colors flex items-center gap-1">
-                            {tx.type}
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                              <polyline points="15 3 21 3 21 9" />
-                              <line x1="10" x2="21" y1="14" y2="3" />
-                            </svg>
-                          </p>
-                          <div className="flex items-center gap-1.5">
-                            {tx.status === "confirmed" && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-500 font-medium">
-                                ✓
-                              </span>
-                            )}
-                            <span className="text-xs text-muted-foreground font-mono">{formatTime(tx.timestamp)}</span>
+            <div className="p-2">
+              {groupTransactionsByDate(transactions).map(([date, txs]) => (
+                <div key={date} className="mb-3 last:mb-0">
+                  <div className="sticky top-0 z-10 backdrop-blur-sm bg-background/60">
+                    <h4 className="text-xs font-medium uppercase text-muted-foreground mb-1 pb-1 border-b border-border/20">{date}</h4>
+                  </div>
+                  <div className="space-y-2">
+                    {txs.map((tx, i) => (
+                      <motion.div
+                        key={tx.signature}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        transition={{ duration: 0.2, delay: i * 0.03 }}
+                        className="group flex items-center p-2 rounded-lg hover:bg-primary/5 transition-all border border-border/20 hover:border-primary/20 bg-card/40 backdrop-blur-sm shadow-sm hover:shadow-md cursor-pointer"
+                        onClick={() => window.open(`https://explorer.solana.com/tx/${tx.signature}`, '_blank')}
+                      >
+                        {getTransactionIcon(tx.type)}
+                        <div className="ml-2 flex-1 min-w-0">
+                          <div className="flex justify-between items-center">
+                            <p className="font-medium text-xs truncate capitalize group-hover:text-primary transition-colors">
+                              {tx.type}
+                            </p>
+                            <div className="flex items-center gap-1">
+                              {tx.status === "confirmed" && (
+                                <span className="text-[8px] px-1 py-0.5 rounded-full bg-green-500/10 text-green-500 font-medium">
+                                  ✓
+                                </span>
+                              )}
+                              <span className="text-[10px] text-muted-foreground font-mono">{formatTime(tx.timestamp)}</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <p className="text-[10px] text-muted-foreground truncate max-w-[100px]">
+                              {tx.recipient}
+                            </p>
+                            <span className="text-[10px] font-semibold bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-600">
+                              {tx.amount} SOL
+                            </span>
                           </div>
                         </div>
-                        <div className="flex justify-between items-center mt-1">
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <span className="inline-block w-1.5 h-1.5 bg-orange-500/70 rounded-full"></span>
-                            {tx.recipient}
-                          </p>
-                          <span className="text-xs font-semibold bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-600">
-                            {tx.amount} SOL
-                          </span>
-                        </div>
-                        <div className="w-full mt-2 h-1 bg-primary/5 rounded-full overflow-hidden">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: '100%' }}
-                            transition={{ duration: 0.5, delay: 0.2 + i * 0.05 }}
-                            className="h-full bg-gradient-to-r from-orange-500/40 to-orange-600/40 rounded-full"
-                          ></motion.div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </AnimatePresence>
         )}
       </div>
 
-      <div className="mt-auto pt-3 border-t border-border/30 relative z-10">
+      <div className="p-3 border-t border-border/40">
         <motion.button 
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleRefresh}
           disabled={loading}
-          className="w-full py-2 bg-gradient-to-r from-orange-500/20 to-orange-600/20 hover:from-orange-500/30 hover:to-orange-600/30 text-sm text-primary font-medium rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow disabled:opacity-50"
+          className="w-full py-1.5 bg-gradient-to-r from-orange-500/20 to-orange-600/20 hover:from-orange-500/30 hover:to-orange-600/30 text-xs text-primary font-medium rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow disabled:opacity-50"
         >
           {loading ? (
             <motion.svg 
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
             >
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
             </motion.svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
               <path d="M21 3v5h-5" />
             </svg>

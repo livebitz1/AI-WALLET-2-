@@ -66,7 +66,6 @@ export default function Home() {
           name: "Check balance", 
           description: "View your current token holdings", 
           icon: <DollarSign className="w-4 h-4" />,
-          shortcut: "Alt+B",
           action: () => {
             insertCommand("What's my balance?");
             closeCommandPalette();
@@ -165,7 +164,6 @@ export default function Home() {
           name: "Get help", 
           description: "Learn how to use the AI assistant", 
           icon: <HelpCircle className="w-4 h-4" />,
-          shortcut: "Alt+/",
           action: () => {
             insertCommand("How do I use this wallet?");
             closeCommandPalette();

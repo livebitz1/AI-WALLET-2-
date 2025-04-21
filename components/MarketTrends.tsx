@@ -236,8 +236,8 @@ export function MarketTrends() {
   };
 
   return (
-    <div className="rounded-xl border border-border/40 bg-card shadow-lg transition-all hover:shadow-xl hover:border-primary/20 overflow-hidden backdrop-blur-sm h-full flex flex-col">
-      <div className="p-4 border-b border-border/40 flex justify-between items-center">
+    <div className="rounded-xl border border-border/40 bg-card shadow-lg transition-all hover:shadow-xl hover:border-primary/20 overflow-hidden backdrop-blur-sm flex flex-col">
+      <div className="p-4 border-b border-border/40 flex justify-between items-center flex-shrink-0">
         <h3 className="text-base font-medium">Market Analysis</h3>
         <div className="flex items-center gap-3">
           {!loading && !error && (
@@ -265,7 +265,7 @@ export function MarketTrends() {
         </div>
       </div>
 
-      <div className="divide-y divide-border/40 flex-grow overflow-y-auto">
+      <div className="divide-y divide-border/40 flex-1 overflow-y-auto h-[calc(100vh-200px)] min-h-0 custom-scrollbar">
         {loading ? (
           // Loading skeleton
           Array(5)
@@ -332,7 +332,7 @@ export function MarketTrends() {
             ))}
             <div className="p-2">
               <button className="w-full py-2 text-center text-xs text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1">
-                View full market <ArrowRight size={12} />
+               
               </button>
             </div>
           </>
