@@ -871,12 +871,19 @@ export default function PastUpdates() {
               <p className="text-sm">© 2023 INTELIQ. All rights reserved.</p>
             </div>
 
+        
             <div className="flex space-x-6">
-              {["Twitter", "Discord", "GitHub", "Documentation"].map((item, i) => (
-                <a key={i} href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {item}
-                </a>
-              ))}
+              {["Twitter", "", "", ""].map(
+                (item, i) => (
+                  <a
+                    key={i}
+                    href="https://x.com/inteliq_xyz"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {item}
+                  </a>
+                )
+              )}
             </div>
           </div>
         </div>
@@ -894,7 +901,7 @@ function NavLink({ href, children, active = false }: { href: string; children: R
           active ? "text-primary" : "text-foreground hover:text-primary"
         }`}
         whileHover={{
-          backgroundColor: "rgba(var(--primary), 0.08)",
+          backgroundColor: "",
         }}
       >
         {children}

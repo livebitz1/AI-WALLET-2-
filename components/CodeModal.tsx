@@ -261,7 +261,7 @@ export function CodeModal({ isOpen, onClose }: CodeModalProps) {
                     <h3 id="code-modal-title" className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
                     CA 
                     </h3>
-                    <p className="text-xs text-muted-foreground">Premium Access Pass</p>
+                    <p className="text-xs text-muted-foreground">INTEIQ</p>
                   </div>
                 </div>
                 

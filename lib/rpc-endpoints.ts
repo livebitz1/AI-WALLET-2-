@@ -10,15 +10,17 @@ type RpcEndpointConfig = {
   lastUsed: number;
   lastFailed: number;
   responseTime: number; // average response time in ms
+  rateLimitedUntil?: number; // Timestamp when rate limit cooling period ends
 };
 
 // Use a variety of endpoints to prevent rate limiting
 const endpoints: RpcEndpointConfig[] = [
-  // Use your provided Helius endpoint as primary
+  // Use your provided Helius endpoint as primary, but with more realistic rate limit
   {
     url: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://mainnet.helius-rpc.com/?api-key=bc153566-8ac2-4019-9c90-e0ef5b840c07",
     priority: 1,
     weight: 10,
+    rateLimitPerMin: 50, // Lower this based on your Helius plan
     failCount: 0,
     lastUsed: 0,
     lastFailed: 0,
@@ -70,18 +72,22 @@ const endpoints: RpcEndpointConfig[] = [
 // Get the best endpoint based on weights, priorities, and recent failures
 export function getBestEndpoint(): string {
   const now = Date.now();
-  const RATE_LIMIT_WINDOW = 60000; // 1 minute in ms
-  const FAILURE_PENALTY_TIME = 30000; // 30 seconds penalty after failure
   
-  // Sort endpoints by a score calculated from multiple factors
+  // Sort endpoints by score (lower is better)
   const sortedEndpoints = [...endpoints].sort((a, b) => {
-    // Heavily penalize endpoints that have failed recently
-    const aFailPenalty = now - a.lastFailed < FAILURE_PENALTY_TIME ? 100 : 0;
-    const bFailPenalty = now - b.lastFailed < FAILURE_PENALTY_TIME ? 100 : 0;
+    // Skip rate limited endpoints completely
+    if (a.rateLimitedUntil && a.rateLimitedUntil > now) return 1;
+    if (b.rateLimitedUntil && b.rateLimitedUntil > now) return -1;
     
-    // Calculate rate limit penalties
-    const aRatePenalty = a.rateLimitPerMin && (now - a.lastUsed) < (RATE_LIMIT_WINDOW / a.rateLimitPerMin) ? 50 : 0;
-    const bRatePenalty = b.rateLimitPerMin && (now - b.lastUsed) < (RATE_LIMIT_WINDOW / b.rateLimitPerMin) ? 50 : 0;
+    // Calculate fail penalty (increases with recency of failure)
+    const aFailPenalty = a.lastFailed ? Math.max(0, 30 - (now - a.lastFailed) / 1000) : 0;
+    const bFailPenalty = b.lastFailed ? Math.max(0, 30 - (now - b.lastFailed) / 1000) : 0;
+    
+    // Calculate rate limit penalty (more sophisticated calculation)
+    const aRatePenalty = a.rateLimitPerMin && (now - a.lastUsed) < (60000 / a.rateLimitPerMin) 
+      ? 50 + (30000 / (now - a.lastUsed + 1)) : 0;
+    const bRatePenalty = b.rateLimitPerMin && (now - b.lastUsed) < (60000 / b.rateLimitPerMin) 
+      ? 50 + (30000 / (now - b.lastUsed + 1)) : 0;
     
     // Calculate base score (lower is better)
     const aScore = a.priority - a.weight + (a.failCount * 2) + aFailPenalty + aRatePenalty;
@@ -126,6 +132,12 @@ export function createOptimalConnection(): Connection {
   return new Connection(endpoint, {
     commitment: 'confirmed',
     confirmTransactionInitialTimeout: 60000,
-    disableRetryOnRateLimit: false
+    disableRetryOnRateLimit: false,
+    retryStrategy: {
+      maxRetries: 5,
+      retryInterval: 500,
+      retryIntervalMultiplier: 2,  // Exponential backoff
+      retryableStatusCodes: [429, 500, 502, 503, 504]
+    }
   });
 }

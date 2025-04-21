@@ -30,7 +30,7 @@ const SuggestionChip = ({ suggestion, onSelect }: { suggestion: string; onSelect
   <motion.button
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    whileHover={{ scale: 1.05, backgroundColor: "rgb(var(--secondary) / 0.8)" }}
+    whileHover={{ scale: 1.05, backgroundColor: "" }}
     whileTap={{ scale: 0.95 }}
     onClick={() => onSelect(suggestion)}
     className="px-3 py-1.5 text-sm bg-secondary/60 text-secondary-foreground rounded-full transition-colors backdrop-blur-sm border border-secondary/20"
@@ -506,7 +506,6 @@ export function ChatInterface() {
             ]);
           } else {
             setSuggestions([
-              "How is the overall market?",
               "What's the price of Ethereum?",
               "Tell me about Solana"
             ]);

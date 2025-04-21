@@ -13,7 +13,8 @@ import { SplashScreen } from "@/components/SplashScreen";
 import { QuickCommandBar } from "@/components/QuickCommandBar";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ContactFormPopup } from "@/components/ContactFormPopup";
-import { CodeModal } from "@/components/CodeModal"; // Import the extracted component
+import { WaitlistFormPopup } from "@/components/WaitlistFormPopup"; // Import the new component
+import { CodeModal } from "@/components/CodeModal";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletStore } from "@/lib/wallet-store";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,7 +25,7 @@ import {
   Search, Command, ArrowRight, Zap, Send, Wallet, ArrowLeftRight, 
   Repeat, History, HelpCircle, DollarSign, Settings, BarChart2, 
   PieChart, Loader, Info, AlertCircle, X, ChevronRight, Mail,
-  Copy, Check, FileText, Map, RefreshCw, Twitter
+  Copy, Check, FileText, Map, RefreshCw, Twitter, Sparkles // Add Sparkles icon
 } from "lucide-react";
 
 export default function Home() {
@@ -50,6 +51,9 @@ export default function Home() {
 
   // Add state to control robot visibility
   const [showRobot, setShowRobot] = useState(true);
+
+  // Add state for waitlist form
+  const [showWaitlistForm, setShowWaitlistForm] = useState(false);
 
   // Command categories and commands
   const commandCategories = [
@@ -396,13 +400,32 @@ export default function Home() {
               </div>
             </NavLink>
             
-            {/* Add Get Code NavLink */}
+            {/* Add Waitlist NavLink */}
+            <div className="relative">
+              <div onClick={() => setShowWaitlistForm(true)}>
+                <NavLink href="#" active={false}>
+                  <div className="flex items-center">
+                    <Sparkles className="mr-1.5 w-4 h-4" />
+                    <span>Waitlist</span>
+                  </div>
+                </NavLink>
+              </div>
+              
+              {/* Waitlist form popup */}
+              <AnimatePresence>
+                {showWaitlistForm && (
+                  <WaitlistFormPopup onClose={() => setShowWaitlistForm(false)} />
+                )}
+              </AnimatePresence>
+            </div>
+            
+            {/* Get Code NavLink */}
             <div className="relative">
               <div onClick={() => setShowCodeModal(true)}>
                 <NavLink href="#" active={false}>
                   <div className="flex items-center">
                     <FileText className="mr-1.5 w-4 h-4" />
-                    <span>Get Code</span>
+                    <span>CA</span>
                   </div>
                 </NavLink>
               </div>
@@ -772,14 +795,14 @@ function NavLink({
 }) {
   return (
     <Link href={href}>
-      <motion.div
-        className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-          active ? "text-primary" : "text-foreground hover:text-primary"
-        }`}
-        whileHover={{
-          backgroundColor: "rgba(var(--primary), 0.08)",
-        }}
-      >
+    <motion.div
+  className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+    active ? "text-primary" : "text-foreground hover:text-primary"
+  }`}
+  whileHover={{
+    backgroundColor: "rgba(144, 97, 249, 0.08)",
+  }}
+>
         {children}
         {active && (
           <motion.div

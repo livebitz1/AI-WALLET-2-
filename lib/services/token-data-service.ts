@@ -64,42 +64,73 @@ const fetchCoinGeckoData = async (address: string, chain: string = 'ethereum') =
 
 // Generate market commentary based on token performance metrics
 const generateMarketCommentary = (priceChange: number, volume: number, liquidity: number): string => {
-  const comments = [];
+  let comments = [];
+  
+  // Price analysis section
+  comments.push("**Price Analysis:**");
   
   // Price commentary
   if (priceChange > 15) {
-    comments.push("🚀 This token is on an absolute tear right now! Extremely bullish price action, but be cautious of potential pullbacks after such rapid gains.");
+    comments.push("• Strong bullish momentum with significant upward price action (+"+priceChange.toFixed(2)+"%)");
+    comments.push("• Currently in potential overbought territory, suggesting possible short-term resistance");
+    comments.push("• Recommend monitoring for consolidation patterns following this rapid appreciation");
   } else if (priceChange > 5) {
-    comments.push("📈 Showing strong bullish momentum. The positive price action suggests growing interest, but always consider market cycles.");
+    comments.push("• Positive market momentum with steady uptrend (+"+priceChange.toFixed(2)+"%)");
+    comments.push("• Price action indicates increasing market confidence and accumulation");
+    comments.push("• Potential for continued upside if support levels maintain");
   } else if (priceChange > 0) {
-    comments.push("👍 Modest positive momentum. The token is performing relatively well in current market conditions.");
+    comments.push("• Mild positive performance (+"+priceChange.toFixed(2)+"%)");
+    comments.push("• Price stability with minor appreciation suggests balanced market sentiment");
+    comments.push("• Current levels may represent equilibrium between buyers and sellers");
   } else if (priceChange > -5) {
-    comments.push("😐 Price is relatively stable. Could be consolidating before the next move, or facing resistance at current levels.");
+    comments.push("• Price consolidation phase with minimal downside ("+priceChange.toFixed(2)+"%)");
+    comments.push("• Minor retracement may indicate profit-taking or temporary resistance");
+    comments.push("• Market participants likely reassessing position before next directional move");
   } else if (priceChange > -15) {
-    comments.push("📉 Currently in a downtrend. May be looking for support, or facing selling pressure.");
+    comments.push("• Bearish short-term trend developing ("+priceChange.toFixed(2)+"%)");
+    comments.push("• Price currently seeking support levels with increased selling pressure");
+    comments.push("• Potential for oversold conditions if downtrend accelerates");
   } else {
-    comments.push("🔻 Experiencing significant selling pressure. Could indicate broader concerns or just temporary market dynamics.");
+    comments.push("• Significant bearish price action ("+priceChange.toFixed(2)+"%)");
+    comments.push("• Sharp depreciation indicates potential fundamental concerns or market-wide volatility");
+    comments.push("• Technical indicators suggest extreme oversold conditions may be developing");
   }
   
-  // Volume commentary
-  if (volume > 1000000) {
-    comments.push("Trading volume is substantial, indicating strong interest and liquidity, which is positive for traders.");
-  } else if (volume > 100000) {
-    comments.push("Decent trading volume shows reasonable market participation. Not the highest, but sufficient for most trades.");
-  } else {
-    comments.push("Volume is on the lower side, which could result in higher slippage when trading and indicates limited current interest.");
-  }
+  comments.push("\n**Liquidity Analysis:**");
   
   // Liquidity commentary
   if (liquidity > 500000) {
-    comments.push("Liquidity looks healthy, which reduces potential slippage and generally makes for a more stable trading environment.");
+    comments.push("• High liquidity profile ($"+(liquidity/1000000).toFixed(2)+"M) providing robust market depth");
+    comments.push("• Minimal slippage expected for standard transaction sizes");
+    comments.push("• Favorable conditions for institutional participation and larger positions");
   } else if (liquidity > 50000) {
-    comments.push("Has reasonable liquidity for its size, but larger trades might still experience some slippage.");
+    comments.push("• Moderate liquidity levels ($"+(liquidity/1000).toFixed(2)+"K) sufficient for typical trading activity");
+    comments.push("• Acceptable execution conditions for average position sizes");
+    comments.push("• Potential for temporary liquidity constraints during high volatility periods");
   } else {
-    comments.push("Low liquidity means potentially high slippage and volatility. Exercise caution with larger positions.");
+    comments.push("• Limited liquidity depth ($"+(liquidity/1000).toFixed(2)+"K) presenting execution challenges");
+    comments.push("• Higher probability of significant slippage on larger orders");
+    comments.push("• Recommended position sizing adjustments to accommodate restricted market depth");
   }
   
-  return comments.join(" ");
+  comments.push("\n**Volume Analysis:**");
+  
+  // Volume commentary
+  if (volume > 1000000) {
+    comments.push("• Robust trading volume ($"+(volume/1000000).toFixed(2)+"M) indicating strong market participation");
+    comments.push("• High activity levels suggest significant trader interest and price discovery");
+    comments.push("• Volume supports current price action and enhances technical signal reliability");
+  } else if (volume > 100000) {
+    comments.push("• Adequate trading volume ($"+(volume/1000).toFixed(2)+"K) with reasonable market engagement");
+    comments.push("• Sufficient activity for effective price discovery mechanisms");
+    comments.push("• Volume patterns align with typical trading range expectations");
+  } else {
+    comments.push("• Below-average trading volume ($"+(volume/1000).toFixed(2)+"K) indicating reduced market interest");
+    comments.push("• Thin participation may result in erratic price movements and reduced reliability of technical patterns");
+    comments.push("• Limited volume suggests cautious approach to position entry and exit strategies");
+  }
+  
+  return comments.join("\n");
 };
 
 // Format token data into a readable response
@@ -170,10 +201,10 @@ ${geckoData.description?.en ? '- Description: ' + geckoData.description.en.slice
 - DEX: ${dexId}
 - Pair Address: \`${pairAddress}\`
 ${additionalInfo}
-**Market Analysis:**
+**Professional Market Analysis:**
 ${commentary}
 
-Result by INTELIQ
+*Analysis provided by INTELIQ Market Intelligence*
 ${geckoData ? `` : ''}
 `;
 };
