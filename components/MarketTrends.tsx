@@ -71,7 +71,7 @@ export function MarketTrends() {
   }, []);
 
   return (
-    <div className="rounded-xl border border-border/40 bg-card shadow-lg transition-all hover:shadow-xl hover:border-primary/20 overflow-hidden backdrop-blur-sm">
+    <div className="rounded-xl border border-border/40 bg-card shadow-lg transition-all hover:shadow-xl hover:border-primary/20 overflow-hidden backdrop-blur-sm h-full flex flex-col">
       <div className="p-4 border-b border-border/40 flex justify-between items-center">
         <h3 className="text-base font-medium">Market Trends</h3>
         {!loading && !error && (
@@ -81,7 +81,7 @@ export function MarketTrends() {
         )}
       </div>
 
-      <div className="divide-y divide-border/40">
+      <div className="divide-y divide-border/40 flex-grow overflow-y-auto">
         {loading ? (
           // Loading skeleton
           Array(5).fill(0).map((_, i) => (

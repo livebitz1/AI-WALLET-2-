@@ -12,7 +12,8 @@ import { SubscriptionCards } from "@/components/SubscriptionCards";
 import { SplashScreen } from "@/components/SplashScreen";
 import { QuickCommandBar } from "@/components/QuickCommandBar";
 import { CommandPalette } from "@/components/CommandPalette";
-import { ContactFormPopup } from "@/components/ContactFormPopup"; // Import the new component
+import { ContactFormPopup } from "@/components/ContactFormPopup";
+import { CodeModal } from "@/components/CodeModal"; // Import the extracted component
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletStore } from "@/lib/wallet-store";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,7 +23,8 @@ import Image from "next/image";
 import { 
   Search, Command, ArrowRight, Zap, Send, Wallet, ArrowLeftRight, 
   Repeat, History, HelpCircle, DollarSign, Settings, BarChart2, 
-  PieChart, Loader, Info, AlertCircle, X, ChevronRight, Mail
+  PieChart, Loader, Info, AlertCircle, X, ChevronRight, Mail,
+  Copy, Check, FileText, Map, RefreshCw, Twitter
 } from "lucide-react";
 
 export default function Home() {
@@ -45,6 +47,9 @@ export default function Home() {
     typeof window !== 'undefined' ? 
       JSON.parse(localStorage.getItem('recentCommands') || '[]') : []
   );
+
+  // Add state to control robot visibility
+  const [showRobot, setShowRobot] = useState(true);
 
   // Command categories and commands
   const commandCategories = [
@@ -308,6 +313,7 @@ export default function Home() {
 
   const [showContactForm, setShowContactForm] = useState(false);
   const contactButtonRef = useRef<HTMLDivElement>(null);
+  const [showCodeModal, setShowCodeModal] = useState(false);
 
   if (showSplash) {
     return <SplashScreen onComplete={handleSplashComplete} />;
@@ -315,6 +321,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/90">
+      
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-grid-pattern opacity-5"></div>
 
@@ -372,39 +379,38 @@ export default function Home() {
             </NavLink>
             <NavLink href="/roadmap" active={pathname === "/roadmap"}>
               <div className="flex items-center">
-                <span className="mr-1.5">Roadmap</span>
-                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary">
-                  New
-                </span>
+                <Map className="mr-1.5 w-4 h-4" />
+                <span>Roadmap</span>
               </div>
             </NavLink>
             <NavLink href="/past-updates" active={pathname === "/past-updates"}>
               <div className="flex items-center">
-                <span className="mr-1.5">Updates</span>
-                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary">
-                  New
-                </span>
+                <RefreshCw className="mr-1.5 w-4 h-4" />
+                <span>Updates</span>
               </div>
             </NavLink>
             <NavLink href="/twitter-feed" active={pathname === "/twitter-feed"}>
               <div className="flex items-center">
-                <span className="mr-1.5">Twitter</span>
-                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary">
-                  New
-                </span>
+                <Twitter className="mr-1.5 w-4 h-4" />
+                <span>Twitter</span>
               </div>
             </NavLink>
             
-            {/* Change to onClick instead of hover */}
-            <div className="relative" ref={contactButtonRef}>
-              <div onClick={() => setShowContactForm(!showContactForm)}>
+            {/* Add Get Code NavLink */}
+            <div className="relative">
+              <div onClick={() => setShowCodeModal(true)}>
                 <NavLink href="#" active={false}>
                   <div className="flex items-center">
-                    <Mail className="mr-1.5 w-4 h-4" />
-                    <span>Contact</span>
+                    <FileText className="mr-1.5 w-4 h-4" />
+                    <span>Get Code</span>
                   </div>
                 </NavLink>
               </div>
+            </div>
+            
+            {/* Contact form popup */}
+            <div className="relative" ref={contactButtonRef}>
+            
               
               <AnimatePresence>
                 {showContactForm && (
@@ -440,18 +446,20 @@ export default function Home() {
           walletConnected={connected}
         />
 
-        <div className="my-12 grid grid-cols-12 gap-4">
+        <div className="my-12 grid grid-cols-12 gap-4 min-h-[600px]">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="col-span-12 lg:col-span-3 flex flex-col gap-4"
+            className="col-span-12 lg:col-span-3 flex flex-col gap-4 h-full"
             ref={(el) => el && (sectionRefs.current[1] = el)}
           >
             {connected && publicKey ? (
-              <TokenDisplay />
+              <div className="h-1/3 mb-4">
+                <TokenDisplay />
+              </div>
             ) : (
-              <div className="rounded-xl border border-border/40 bg-card p-4 text-center shadow-lg transition-all hover:shadow-xl hover:border-primary/20 h-full min-h-[200px] flex flex-col items-center justify-center backdrop-blur-sm">
+              <div className="h-1/3 mb-4 rounded-xl border border-border/40 bg-card p-4 text-center shadow-lg transition-all hover:shadow-xl hover:border-primary/20 flex flex-col items-center justify-center backdrop-blur-sm">
                 <div className="relative w-16 h-16 mb-4">
                   <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping-slow"></div>
                   <div className="absolute inset-3 bg-primary/40 rounded-full animate-ping-slow animation-delay-300"></div>
@@ -485,14 +493,16 @@ export default function Home() {
               </div>
             )}
 
-            <MarketTrends />
+            <div className="h-2/3">
+              <MarketTrends />
+            </div>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="col-span-12 lg:col-span-6 flex flex-col"
+            className="col-span-12 lg:col-span-6 flex flex-col h-full"
             ref={(el) => el && (sectionRefs.current[2] = el)}
           >
             <div className="chat-interface h-full">
@@ -504,13 +514,13 @@ export default function Home() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="col-span-12 lg:col-span-3 flex flex-col gap-4"
+            className="col-span-12 lg:col-span-3 h-full"
             ref={(el) => el && (sectionRefs.current[3] = el)}
           >
             {connected && publicKey ? (
               <TransactionHistory />
             ) : (
-              <div className="rounded-xl border border-border/40 bg-card p-4 text-center shadow-lg transition-all hover:shadow-xl hover:border-primary/20 h-full min-h-[200px] flex flex-col items-center justify-center backdrop-blur-sm">
+              <div className="rounded-xl border border-border/40 bg-card p-4 text-center shadow-lg transition-all hover:shadow-xl hover:border-primary/20 h-full flex flex-col items-center justify-center backdrop-blur-sm">
                 <div className="relative w-16 h-16 mb-4">
                   <div className="absolute inset-0 bg-accent/20 rounded-full animate-ping-slow"></div>
                   <div className="absolute inset-3 bg-accent/40 rounded-full animate-ping-slow animation-delay-300"></div>
@@ -704,6 +714,8 @@ export default function Home() {
         insertCommand={insertCommand}
       />
 
+      <CodeModal isOpen={showCodeModal} onClose={() => setShowCodeModal(false)} />
+
       <section className="py-16 my-8">
         <SubscriptionCards />
       </section>
@@ -730,11 +742,11 @@ export default function Home() {
             </div>
 
             <div className="flex space-x-6">
-              {["Twitter", "Discord", "GitHub", "Documentation"].map(
+              {["Twitter", "", "", ""].map(
                 (item, i) => (
                   <a
                     key={i}
-                    href="#"
+                    href="https://x.com/inteliq_xyz"
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {item}

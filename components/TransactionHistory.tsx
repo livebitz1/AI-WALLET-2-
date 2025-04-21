@@ -329,7 +329,7 @@ export function TransactionHistory() {
         )}
       </div>
 
-      <div className="mt-4 pt-3 border-t border-border/30 relative z-10">
+      <div className="mt-auto pt-3 border-t border-border/30 relative z-10">
         <motion.button 
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.98 }}

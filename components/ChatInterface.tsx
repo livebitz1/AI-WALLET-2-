@@ -707,7 +707,7 @@ export function ChatInterface() {
 
   return (
     <>
-      <div className="chat-interface flex flex-col h-[calc(100vh-9rem)] md:h-[calc(100vh-12rem)] rounded-xl border border-border/40 overflow-hidden shadow-lg bg-card/50 backdrop-blur-sm">
+      <div className="chat-interface flex flex-col h-full rounded-xl border border-border/40 overflow-hidden shadow-lg bg-card/50 backdrop-blur-sm">
         {/* Chat header */}
         <div className="border-b border-border/40 p-4 flex items-center justify-between bg-card/80">
           <div className="flex items-center gap-2">

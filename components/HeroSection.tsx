@@ -5,6 +5,7 @@ import { motion, useAnimation } from "framer-motion";
 import { WalletButton } from "@/components/WalletButton";
 import { useWallet } from "@solana/wallet-adapter-react";
 import SpaceButton from "./SpaceButton";
+import Card from "./Card"; // Import the Card component
 
 // Dynamic import Three.js to prevent server-side rendering issues
 let THREE: any;
@@ -261,16 +262,23 @@ export const HeroSection = forwardRef<HTMLDivElement, HeroSectionProps>(
               <SpaceButton text="INTELIQ" />
             </motion.div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight">
-              <span className="gradient-text">Speak</span> to Your{" "}
-              <span className="gradient-text">Crypto</span>
-            </h1>
+            <div className="relative">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight">
+                <span className="gradient-text">Speak</span> to Your{" "}
+                <span className="gradient-text">Crypto</span>
+              </h1>
+              
+              <div className="absolute right-[-550px] top-[-130px] md:right-[-550px] md:top-[-130px] lg:right-[-600px] lg:top-[-120px] transform scale-115 md:scale-130 lg:scale-150">
+                <Card />
+              </div>
+            </div>
 
             <p className="text-lg text-muted-foreground mb-8">
               Experience a natural language interface to your Solana wallet. No
               more complex DEX interfaces or crypto jargon—just tell the AI
               what you want to do.
             </p>
+                
 
             <div className="flex flex-col sm:flex-row gap-4">
               {!walletConnected ? (

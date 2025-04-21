@@ -59,7 +59,7 @@ const SpaceButton = ({ text = "SPACE" }: { text?: string }) => {
         strong {
           z-index: 2;
           font-family: "Orbitron", sans-serif;
-          font-size: 12px;
+          font-size: 16px; /* Increased from 12px to 16px */
           letter-spacing: 5px;
           color: #ffffff;
           text-shadow: 0 0 4px white;
@@ -94,15 +94,6 @@ const SpaceButton = ({ text = "SPACE" }: { text?: string }) => {
         .circle:nth-of-type(2) {
           background: rgba(99, 30, 41, 0.704);
           animation: orbit 10s linear infinite;
-        }
-
-        .space-btn:hover #container-stars {
-          z-index: 1;
-          background-color: #161a25;
-        }
-
-        .space-btn:hover {
-          transform: scale(1.1);
         }
 
         .space-btn:active {

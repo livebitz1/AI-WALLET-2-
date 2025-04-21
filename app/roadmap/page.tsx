@@ -584,8 +584,11 @@ export default function Roadmap() {
                   </span>
                   
                   <Twitter className="w-5 h-5 relative z-10" />
-                  <span className="font-medium relative z-10">Follow Our Journey</span>
-                  <ExternalLink className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
+                  <span className="font-medium relative z-10">
+  <a href="https://x.com/inteliq_xyz" target="_blank" rel="noopener noreferrer">
+    Follow Our Journey
+  </a>
+</span>                  <ExternalLink className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
                 </motion.a>
               </div>
             </div>

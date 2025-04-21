@@ -173,8 +173,8 @@ ${additionalInfo}
 **Market Analysis:**
 ${commentary}
 
-[View on DexScreener](https://dexscreener.com/${mainPair.chainId}/${pairAddress})
-${geckoData ? `[View on CoinGecko](https://www.coingecko.com/en/coins/${geckoData.id})` : ''}
+Result by INTELIQ
+${geckoData ? `` : ''}
 `;
 };
 

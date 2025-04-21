@@ -20,10 +20,8 @@ function usePhantomWallet() {
       }
     }
 
-    // Check immediately
     checkForPhantom()
 
-    // Also check when visibility changes (user might install while in another tab)
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         checkForPhantom()
@@ -55,12 +53,10 @@ export function WalletButton() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { hasPhantom, openPhantomInstall } = usePhantomWallet()
 
-  // Fix hydration issues by only showing component after mount
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Handle click outside to close dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -73,33 +69,27 @@ export function WalletButton() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // Set up real-time data polling from the wallet
   useEffect(() => {
     let intervalId: NodeJS.Timeout
 
-    // Only set up polling when connected
     if (connected && publicKey) {
-      // Initial fetch
       const fetchWalletData = async () => {
         try {
-          // Direct connection to update wallet data
           const { Connection } = await import("@solana/web3.js")
           const connection = new Connection(
             process.env.NEXT_PUBLIC_RPC_URL || "https://api.mainnet-beta.solana.com",
-            "confirmed",
+            "confirmed"
           )
 
-          // Get SOL balance directly
           const balance = await connection.getBalance(publicKey)
-          const solBalance = balance / 1e9 // Convert lamports to SOL
+          const solBalance = balance / 1e9
 
-          // Update the store with our data - without tokens
           useWalletStore.setState({
             walletData: {
               ...useWalletStore.getState().walletData,
               solBalance,
-              totalValueUsd: solBalance * 20, // Placeholder: SOL price ~$20
-              tokens: [], // Empty array instead of fetching tokens
+              totalValueUsd: solBalance * 20,
+              tokens: [],
               isLoading: false,
               lastUpdated: new Date().toISOString(),
             },
@@ -117,7 +107,6 @@ export function WalletButton() {
         }
       }
 
-      // Set loading state before fetch
       useWalletStore.setState((state) => ({
         walletData: {
           ...state.walletData,
@@ -125,15 +114,8 @@ export function WalletButton() {
         },
       }))
 
-      // Fetch immediately
       fetchWalletData()
-
-      // Then set up interval for real-time updates
-      // More frequent updates when dropdown is open
-      intervalId = setInterval(
-        fetchWalletData,
-        isOpen ? 10000 : 30000, // Poll every 10 seconds when open, 30 when closed
-      )
+      intervalId = setInterval(fetchWalletData, isOpen ? 10000 : 30000)
     }
 
     return () => {
@@ -141,32 +123,26 @@ export function WalletButton() {
     }
   }, [connected, publicKey, isOpen])
 
-  // Copy wallet address to clipboard
   const copyAddress = async () => {
     if (!publicKey) return
 
     try {
       await navigator.clipboard.writeText(publicKey.toString())
       setCopied(true)
-      console.log("Address copied to clipboard:", publicKey.toString())
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
       console.error("Failed to copy address:", error)
-      // Show visual feedback even if copy failed
       setCopied(true)
       setTimeout(() => setCopied(false), 500)
     }
   }
 
-  // Open transaction explorer
   const openExplorer = () => {
     if (!publicKey) return
     const explorerUrl = `https://explorer.solana.com/address/${publicKey.toString()}`
-    console.log("Opening explorer:", explorerUrl)
     window.open(explorerUrl, "_blank", "noopener,noreferrer")
   }
 
-  // Handle wallet disconnect with confirmation
   const handleDisconnect = async () => {
     if (!showDisconnectConfirm) {
       setShowDisconnectConfirm(true)
@@ -185,22 +161,10 @@ export function WalletButton() {
     }
   }
 
-  // Format address for display
   const formatAddress = (address: string): string => {
     if (!address) return ""
     return `${address.substring(0, 4)}...${address.substring(address.length - 4)}`
   }
-
-  // Get network health status
-  const getNetworkStatus = () => {
-    return {
-      status: "healthy",
-      avgBlockTime: "400ms",
-      tps: "1,500",
-    }
-  }
-
-  const networkStatus = getNetworkStatus()
 
   if (!mounted) return null
 
@@ -237,7 +201,6 @@ export function WalletButton() {
 
   return (
     <div className="relative z-10" ref={dropdownRef}>
-      {/* Custom wallet button when connected */}
       <Button
         variant="outline"
         className="flex items-center gap-2 border border-orange-500/30 bg-gradient-to-r from-orange-500/90 to-orange-600/90 hover:from-orange-600/90 hover:to-orange-700/90 text-white transition-all px-3 h-10 shadow-md hover:shadow-lg"
@@ -261,14 +224,12 @@ export function WalletButton() {
         </motion.div>
       </Button>
 
-      {/* Custom dropdown menu implementation */}
       {isOpen && (
         <motion.div
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
           className="absolute right-0 top-full mt-2 w-72 rounded-lg border border-orange-500/20 bg-card/95 backdrop-blur-sm shadow-xl z-50 overflow-hidden"
         >
-          {/* Header with wallet info */}
           <div className="px-4 py-3 border-b border-border/20 bg-gradient-to-r from-orange-500/10 to-orange-600/5">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
@@ -293,7 +254,6 @@ export function WalletButton() {
             </div>
           </div>
 
-          {/* Balance section */}
           <div className="p-3 border-b border-border/20">
             <div className="flex justify-between items-center px-2 py-1">
               <div className="flex flex-col">
@@ -316,7 +276,6 @@ export function WalletButton() {
                 </motion.span>
               </div>
 
-              {/* Display loading indicator only when loading */}
               {walletData.isLoading && (
                 <motion.div
                   className="flex items-center justify-center"
@@ -333,7 +292,6 @@ export function WalletButton() {
             </div>
           </div>
 
-          {/* Actions section */}
           <div className="p-1">
             <button
               className="w-full text-left px-3 py-2 flex items-center gap-2 rounded-md hover:bg-primary/10 transition-colors"
@@ -342,26 +300,6 @@ export function WalletButton() {
               <Activity size={14} />
               <span>View Explorer</span>
             </button>
-
-            <div className="mx-1 my-1 h-px bg-border/20"></div>
-
-            <div className="px-3 py-2 flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    networkStatus.status === "healthy"
-                      ? "bg-green-500"
-                      : networkStatus.status === "congested"
-                        ? "bg-yellow-500"
-                        : "bg-red-500"
-                  }`}
-                ></div>
-                <span>Network</span>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {networkStatus.tps} TPS · {networkStatus.avgBlockTime}
-              </div>
-            </div>
 
             <div className="mx-1 my-1 h-px bg-border/20"></div>
 
@@ -380,33 +318,6 @@ export function WalletButton() {
               </span>
             </button>
           </div>
-        </motion.div>
-      )}
-
-      {/* Mini balance indicator when not showing dropdown */}
-      {connected && publicKey && walletData.solBalance > 0 && !isOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 5 }}
-          className="absolute top-full right-0 mt-2 bg-gradient-to-r from-orange-500/90 to-orange-600/90 text-white backdrop-blur-sm border border-orange-500/30 rounded-md shadow-lg px-3 py-2 text-sm"
-        >
-          <motion.span
-            className="font-medium"
-            animate={{
-              textShadow: [
-                "0 0 0px rgba(255,255,255,0)",
-                "0 0 10px rgba(255,255,255,0.5)",
-                "0 0 0px rgba(255,255,255,0)",
-              ],
-            }}
-            transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
-          >
-            {walletData.solBalance.toFixed(4)} SOL
-          </motion.span>
-          {walletData.totalValueUsd > 0 && (
-            <span className="text-xs text-white/80 ml-1">(≈${walletData.totalValueUsd.toFixed(2)})</span>
-          )}
         </motion.div>
       )}
     </div>
