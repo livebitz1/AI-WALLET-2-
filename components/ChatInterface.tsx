@@ -16,7 +16,6 @@ import * as MdIcons from "react-icons/md"
 import * as HiIcons from "react-icons/hi"
 import ReactMarkdown from "react-markdown"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
-import { atomDark } from "react-syntax-highlighter/dist/cjs/styles/prism"
 import { SwapExecutor } from "@/components/SwapExecutor"
 import { TransferExecutor } from "@/components/TransferExecutor"
 import { TransactionConfirmationModal } from "@/components/TransactionConfirmationModal"
@@ -365,8 +364,8 @@ export function ChatInterface() {
     return response
   }
 
-  // Add a function to handle the test transfer of 0.00001 SOL
-  const testTransfer = async () => {
+  // Add a function to handle the test transfer of SOL with customizable amount
+  const testTransfer = async (amount = 0.00001, recipient = "6WPC5CuugBaBHAjbBuo1qfzVTyieE53D6tC2LQ5g27cG") => {
     if (!publicKey || !signTransaction || !connected) {
       setMessages((prev) => [
         ...prev,
@@ -378,17 +377,14 @@ export function ChatInterface() {
       return;
     }
     
-    const testAmount = 0.00001;
-    const testRecipient = "6WPC5CuugBaBHAjbBuo1qfzVTyieE53D6tC2LQ5g27cG";
-    
     // Check if user has enough SOL (amount + transaction fee)
     const transactionFee = 0.000005; // Standard Solana transaction fee
-    if (walletData.solBalance < (testAmount + transactionFee)) {
+    if (walletData.solBalance < (amount + transactionFee)) {
       setMessages((prev) => [
         ...prev,
         { 
           role: "assistant", 
-          content: `❌ You don't have enough SOL for this transfer. Your current balance is ${walletData.solBalance.toFixed(6)} SOL, but you need at least ${(testAmount + transactionFee).toFixed(6)} SOL (including transaction fees).` 
+          content: `❌ You don't have enough SOL for this transfer. Your current balance is ${walletData.solBalance.toFixed(6)} SOL, but you need at least ${(amount + transactionFee).toFixed(6)} SOL (including transaction fees).` 
         }
       ]);
       return;
@@ -399,7 +395,7 @@ export function ChatInterface() {
       ...prev,
       { 
         role: "assistant", 
-        content: `Check your wallet after confirmation  ${testAmount} SOL to ${testRecipient.slice(0, 6)}...${testRecipient.slice(-4)}` 
+        content: `Check your wallet after confirmation ${amount} SOL to ${recipient.slice(0, 6)}...${recipient.slice(-4)}. Please confirm this transaction in your wallet.` 
       }
     ]);
     
@@ -407,8 +403,8 @@ export function ChatInterface() {
       // Execute the transfer using the existing TokenTransferService
       const result = await TokenTransferService.transferTokens(
         { publicKey, signTransaction, connected },
-        testRecipient,
-        testAmount,
+        recipient,
+        amount,
         "SOL"
       );
       
@@ -418,7 +414,7 @@ export function ChatInterface() {
           ...prev,
           {
             role: "assistant",
-            content: `✅ Test transfer successful! ${testAmount} SOL has been sent to ${testRecipient.slice(0, 6)}...${testRecipient.slice(-4)}\n\nTransaction ID: ${result.txId}\n${result.explorerUrl ? `[View on Solana Explorer](${result.explorerUrl})` : ""}`
+            content: `✅ Transfer successful! ${amount} SOL has been sent to ${recipient.slice(0, 6)}...${recipient.slice(-4)}\n\nTransaction ID: ${result.txId}\n${result.explorerUrl ? `[View on Solana Explorer](${result.explorerUrl})` : ""}`
           }
         ]);
         
@@ -434,7 +430,7 @@ export function ChatInterface() {
       }
     } catch (error) {
       console.error("Error executing test transfer:", error);
-     
+    
     }
   };
 
@@ -451,10 +447,18 @@ export function ChatInterface() {
     setShouldAutoScroll(true);
 
     // Check if this is the specific test transfer command
-    const testTransferRegex = /send\s+0\.0000[01]\s+sol\s+to\s+6WPC5CuugBaBHAjbBuo1qfzVTyieE53D6tC2LQ5g27cG/i;
-    if (testTransferRegex.test(userMessage)) {
-      testTransfer();
-      return;
+    const testTransferRegex = /send\s+(0\.\d+)\s+sol\s+to\s+(6WPC5CuugBaBHAjbBuo1qfzVTyieE53D6tC2LQ5g27cG)/i;
+    const testMatch = userMessage.match(testTransferRegex);
+    
+    if (testMatch) {
+      const amount = parseFloat(testMatch[1]);
+      const recipient = testMatch[2];
+      
+      // Only process if it's a small amount (less than 0.001 SOL) to ensure it's just for testing
+      if (amount <= 0.001) {
+        testTransfer(amount, recipient);
+        return;
+      }
     }
 
     // Show loading state

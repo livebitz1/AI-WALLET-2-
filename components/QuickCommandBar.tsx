@@ -163,9 +163,9 @@ export function QuickCommandBar({ insertCommand }: QuickCommandBarProps) {
       color: "from-green-500/30 to-emerald-500/30" 
     },
     { 
-      name: "Market trends", 
+      name: "BTC price", 
       icon: <BarChart className="w-5 h-5" strokeWidth={1.5} />, 
-      command: "Show me market trends", 
+      command: "Show me the current BTC price", 
       description: "Get the latest market movement overview",
       category: "analytics", 
       color: "from-orange-500/30 to-amber-500/30" 
