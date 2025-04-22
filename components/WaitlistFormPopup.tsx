@@ -500,7 +500,7 @@ export function WaitlistFormPopup({ onClose }: WaitlistFormPopupProps) {
                             scale: [1, 1.2, 1],
                             opacity: animationStep >= 1 ? 1 : 0.5
                           }}
-                          transition={{ duration: 0.5, repeat: false }}
+                          transition={{ duration: 0.5, repeatCount: 0 }}
                         />
                         <motion.div 
                           className="h-4 w-4 rounded-full bg-white"
@@ -508,7 +508,7 @@ export function WaitlistFormPopup({ onClose }: WaitlistFormPopupProps) {
                             scale: [1, animationStep >= 2 ? 1.2 : 1, 1],
                             opacity: animationStep >= 2 ? 1 : 0.5
                           }}
-                          transition={{ duration: 0.5, repeat: false, delay: 0.2 }}
+                          transition={{ duration: 0.5, repeatCount: 0, delay: 0.2 }}
                         />
                         <motion.div 
                           className="h-4 w-4 rounded-full bg-white"
@@ -516,7 +516,7 @@ export function WaitlistFormPopup({ onClose }: WaitlistFormPopupProps) {
                             scale: [1, animationStep >= 3 ? 1.2 : 1, 1],
                             opacity: animationStep >= 3 ? 1 : 0.5
                           }}
-                          transition={{ duration: 0.5, repeat: false, delay: 0.4 }}
+                          transition={{ duration: 0.5, repeatCount: 0, delay: 0.4 }}
                         />
                       </div>
                     )}

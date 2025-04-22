@@ -67,9 +67,10 @@ export function TransferExecutor({
           onError(new Error(result.message));
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error executing transfer:", error);
-      notify.error("Transfer Error", `An unexpected error occurred: ${error.message || "Unknown error"}`);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      notify.error("Transfer Error", `An unexpected error occurred: ${errorMessage}`);
       
       if (onError) {
         onError(error);

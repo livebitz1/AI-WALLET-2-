@@ -29,13 +29,21 @@ interface AIHelperProps {
   open: boolean;
   onClose: () => void;
   insertCommand: (command: string) => void;
+  commandCategories: {
+    name: string;
+    icon: React.ReactNode;
+    commands: {
+      id: string;
+      name: string;
+      description: string;
+      icon: React.ReactNode;
+      action: () => void;
+    }[];
+  }[];
 }
 
-export function CommandPalette({ 
-  open, 
-  onClose,
-  insertCommand 
-}: AIHelperProps) {
+export function CommandPalette({ open, onClose, insertCommand, commandCategories }: AIHelperProps) 
+  {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
   const [activeView, setActiveView] = useState<"main" | "details">("main");

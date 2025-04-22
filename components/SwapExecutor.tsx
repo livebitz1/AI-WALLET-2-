@@ -80,9 +80,10 @@ export function SwapExecutor({
         }
       }
       
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error executing swap:", error);
-      notify.error("Swap Error", `An unexpected error occurred: ${error.message || "Unknown error"}`);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      notify.error("Swap Error", `An unexpected error occurred: ${errorMessage}`);
       
       if (onError) {
         onError(error);

@@ -206,7 +206,7 @@ export default function Home() {
           );
         } else if (e.key === 'ArrowUp') {
           e.preventDefault();
-          setSelectedCommandIndex(prev => Math.max(prev - 1, 0));
+          setSelectedCommandIndex(prev => Math.max(prev - 0, 0));
         } else if (e.key === 'Enter' && selectedCommandIndex >= 0) {
           e.preventDefault();
           const commands = getFilteredCommands();
@@ -455,7 +455,9 @@ export default function Home() {
       <main className="container px-4 py-6 mx-auto max-w-7xl">
         <HeroSection
           ref={(el) => { 
-            if (el) sectionRefs.current[0] = el;
+            if (el) {
+              sectionRefs.current[0] = el;
+            }
           }}
           walletConnected={connected}
         />
@@ -466,7 +468,11 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
             className="col-span-12 lg:col-span-3 flex flex-col gap-4 h-full"
-            ref={(el) => el && (sectionRefs.current[1] = el)}
+            ref={(el) => { 
+              if (el) {
+                sectionRefs.current[1] = el;
+              }
+            }}
           >
             {connected && publicKey ? (
               <div className="h-1/3 mb-4">
@@ -517,7 +523,11 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
             className="col-span-12 lg:col-span-6 flex flex-col h-full"
-            ref={(el) => el && (sectionRefs.current[2] = el)}
+            ref={(el) => { 
+              if (el) {
+                sectionRefs.current[2] = el;
+              }
+            }}
           >
             <div className="chat-interface h-full">
               <ChatInterface />
@@ -529,7 +539,11 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
             className="col-span-12 lg:col-span-3 h-full"
-            ref={(el) => el && (sectionRefs.current[3] = el)}
+            ref={(el) => { 
+              if (el) {
+                sectionRefs.current[3] = el;
+              }
+            }}
           >
             {connected && publicKey ? (
               <TransactionHistory />
@@ -571,11 +585,19 @@ export default function Home() {
 
         <QuickCommandBar />
 
-        <FeatureShowcase ref={(el) => el && (sectionRefs.current[4] = el)} />
+        <FeatureShowcase 
+          ref={el => {
+            el && (sectionRefs.current[4] = el);
+          }} 
+        />
 
         <section
           className="py-12 my-12 border-t border-b border-border/30"
-          ref={(el) => el && (sectionRefs.current[5] = el)}
+          ref={(el) => { 
+            if (el) {
+              sectionRefs.current[5] = el;
+            }
+          }}
         >
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold mb-4 gradient-text">
@@ -617,11 +639,13 @@ export default function Home() {
           </div>
         </section>
 
-       
-
         <section
           className="py-16 my-12 text-center"
-          ref={(el) => el && (sectionRefs.current[7] = el)}
+          ref={(el) => { 
+            if (el) {
+              sectionRefs.current[7] = el;
+            }
+          }}
         >
           <div className="max-w-3xl mx-auto relative overflow-hidden rounded-2xl border border-primary/20 p-8 backdrop-blur-sm">
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/30 rounded-full blur-3xl"></div>

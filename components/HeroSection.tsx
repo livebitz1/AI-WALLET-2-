@@ -82,7 +82,7 @@ export const HeroSection = forwardRef<HTMLDivElement, HeroSectionProps>(
 
       // Add digital circuit pattern - create a fallback if texture loading fails
       const circuitGeometry = new THREE.PlaneGeometry(2.8, 1.8);
-      let circuitMaterial;
+      let circuitMaterial: THREE.MeshBasicMaterial;
 
       try {
         const circuitTexture = new THREE.TextureLoader().load(
