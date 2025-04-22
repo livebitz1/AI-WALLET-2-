@@ -395,7 +395,7 @@ export function ChatInterface() {
       ...prev,
       { 
         role: "assistant", 
-        content: `Check your wallet after confirmation ${amount} SOL to ${recipient.slice(0, 6)}...${recipient.slice(-4)}. Please confirm this transaction in your wallet.` 
+        content: `Sending ${amount} SOL to ${recipient.slice(0, 6)}...${recipient.slice(-4)}. Please confirm this transaction in your wallet.` 
       }
     ]);
     
@@ -426,11 +426,23 @@ export function ChatInterface() {
         ]);
       } else {
         // Add error message
-    
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `❌ Transfer failed: ${result.error || result.message || "Unknown error occurred."}`
+          }
+        ]);
       }
     } catch (error) {
       console.error("Error executing test transfer:", error);
-    
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `❌ Transfer failed: ${error instanceof Error ? error.message : "Unknown error occurred."}`
+        }
+      ]);
     }
   };
 
