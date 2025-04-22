@@ -32,7 +32,7 @@ export default function Home() {
   const { publicKey, connected } = useWallet();
   const { walletData } = useWalletStore();
   const [scrolled, setScrolled] = useState(false);
-  const sectionRefs = useRef<HTMLDivElement[]>([]);
+  const sectionRefs = useRef<Array<HTMLElement | null>>([]);
   const [commandHover, setCommandHover] = useState(false);
   const pathname = usePathname();
   
@@ -586,7 +586,7 @@ export default function Home() {
         <QuickCommandBar />
 
         <FeatureShowcase 
-          ref={el => {
+          ref={(el: HTMLDivElement | null) => {
             el && (sectionRefs.current[4] = el);
           }} 
         />

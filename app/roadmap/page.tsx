@@ -99,7 +99,7 @@ const getStatusInfo = (status: string) => {
 };
 
 // Custom Icon components for more professional presentation
-const IconBackground = ({ children, color = "from-blue-500/20 to-indigo-600/20", pulse = false }) => (
+const IconBackground = ({ children, color = "from-blue-500/20 to-indigo-600/20", pulse = false }: { children: React.ReactNode; color?: string; pulse?: boolean }) => (
   <div className="relative">
     <div className={`absolute inset-[-5px] bg-gradient-to-br ${color} rounded-xl blur-lg ${pulse ? 'animate-pulse-slow' : ''} opacity-70`}></div>
     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/10 dark:from-white/5 dark:to-black/5 rounded-lg backdrop-blur-md"></div>
