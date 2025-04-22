@@ -13,7 +13,7 @@ import { SplashScreen } from "@/components/SplashScreen";
 import { QuickCommandBar } from "@/components/QuickCommandBar";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ContactFormPopup } from "@/components/ContactFormPopup";
-import { WaitlistFormPopup } from "@/components/WaitlistFormPopup"; // Import the new component
+import { WaitlistFormPopup } from "@/components/WaitlistFormPopup";
 import { CodeModal } from "@/components/CodeModal";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletStore } from "@/lib/wallet-store";
@@ -25,7 +25,7 @@ import {
   Search, Command, ArrowRight, Zap, Send, Wallet, ArrowLeftRight, 
   Repeat, History, HelpCircle, DollarSign, Settings, BarChart2, 
   PieChart, Loader, Info, AlertCircle, X, ChevronRight, Mail,
-  Copy, Check, FileText, Map, RefreshCw, Twitter, Sparkles // Add Sparkles icon
+  Copy, Check, FileText, Map, RefreshCw, Twitter, Sparkles
 } from "lucide-react";
 
 export default function Home() {
@@ -36,10 +36,8 @@ export default function Home() {
   const [commandHover, setCommandHover] = useState(false);
   const pathname = usePathname();
   
-  // States for splash screen
   const [showSplash, setShowSplash] = useState(true);
 
-  // Enhanced Command Palette states
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [commandSearch, setCommandSearch] = useState("");
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
@@ -49,13 +47,10 @@ export default function Home() {
       JSON.parse(localStorage.getItem('recentCommands') || '[]') : []
   );
 
-  // Add state to control robot visibility
   const [showRobot, setShowRobot] = useState(true);
 
-  // Add state for waitlist form
   const [showWaitlistForm, setShowWaitlistForm] = useState(false);
 
-  // Command categories and commands
   const commandCategories = [
     {
       name: "Wallet Operations",
@@ -192,7 +187,6 @@ export default function Home() {
     }
   ];
 
-  // Keyboard shortcuts for command palette
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -398,7 +392,6 @@ export default function Home() {
               </div>
             </NavLink>
             
-            {/* Add Waitlist NavLink */}
             <div className="relative">
               <div onClick={() => setShowWaitlistForm(true)}>
                 <NavLink href="#" active={false}>
@@ -409,7 +402,6 @@ export default function Home() {
                 </NavLink>
               </div>
               
-              {/* Waitlist form popup */}
               <AnimatePresence>
                 {showWaitlistForm && (
                   <WaitlistFormPopup onClose={() => setShowWaitlistForm(false)} />
@@ -417,7 +409,6 @@ export default function Home() {
               </AnimatePresence>
             </div>
             
-            {/* Get Code NavLink */}
             <div className="relative">
               <div onClick={() => setShowCodeModal(true)}>
                 <NavLink href="#" active={false}>
@@ -429,13 +420,13 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Contact form popup */}
             <div className="relative" ref={contactButtonRef}>
-            
-              
               <AnimatePresence>
                 {showContactForm && (
-                  <ContactFormPopup onClose={() => setShowContactForm(false)} />
+                  <ContactFormPopup 
+                    open={showContactForm} 
+                    onOpenChange={(open) => setShowContactForm(open)} 
+                  />
                 )}
               </AnimatePresence>
             </div>
@@ -463,7 +454,9 @@ export default function Home() {
 
       <main className="container px-4 py-6 mx-auto max-w-7xl">
         <HeroSection
-          ref={(el) => el && (sectionRefs.current[0] = el)}
+          ref={(el) => { 
+            if (el) sectionRefs.current[0] = el;
+          }}
           walletConnected={connected}
         />
 
@@ -624,57 +617,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section
-          className="py-12 my-12"
-          ref={(el) => el && (sectionRefs.current[6] = el)}
-        >
-          <h2 className="text-3xl font-bold mb-12 text-center gradient-text">
-            What Users Are Saying
-          </h2>
-
-          <div className="testimonials-container">
-            {[
-              {
-                quote:
-                  "The AI actually understood what I wanted to do with my crypto. No more fumbling through DEX interfaces!",
-                name: "Alex K.",
-                role: "DeFi Enthusiast",
-              },
-              {
-                quote:
-                  "Being able to ask questions about my own wallet and get meaningful answers is a game-changer.",
-                name: "Sophia L.",
-                role: "Solana Developer",
-              },
-              {
-                quote:
-                  "As a newcomer to Web3, this wallet makes everything so much more accessible. The AI is like having a guide.",
-                name: "Marco T.",
-                role: "Crypto Beginner",
-              },
-            ].map((testimonial, i) => (
-              <div key={i} className="testimonial-card">
-                <div className="relative">
-                  <div className="absolute -top-4 -left-2 text-4xl text-primary/20">
-                    "
-                  </div>
-                  <p className="mb-4 relative z-10">{testimonial.quote}</p>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mr-3">
-                    {testimonial.name[0]}
-                  </div>
-                  <div>
-                    <p className="font-medium">{testimonial.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {testimonial.role}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+       
 
         <section
           className="py-16 my-12 text-center"

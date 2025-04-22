@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AutoSwapService } from '@/lib/auto-swap-service';
 import { SwapIntent } from '@/lib/utils';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const data = await request.json();
     const { intent, walletData } = data;
@@ -42,12 +42,17 @@ export async function POST(request: NextRequest) {
       intent
     });
     
-  } catch (error) {
-    console.error("Error in swap execution API:", error);
+  } catch (error: unknown) {
+    console.error("Error processing swap request:", error);
+    
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Unknown error occurred';
+      
     return NextResponse.json(
       {
         success: false,
-        message: `Error processing swap request: ${error.message}`
+        message: `Error processing swap request: ${errorMessage}`
       },
       { status: 500 }
     );

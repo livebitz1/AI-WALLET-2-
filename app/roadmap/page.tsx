@@ -11,11 +11,14 @@ import {
 } from "lucide-react";
 
 // Updated roadmap data with INTELIQ branding
+// ...existing code...
+
+// Updated roadmap data with INTELIQ branding
 const roadmapItems = [
   {
     title: "Inteliq V2",
-    description: "Enterprise-grade multi-wallet agent control system with voice command capabilities and adaptive execution protocols for seamless portfolio management.",
-    date: "May 20, 2025",
+    description: "Upgraded execution agent with multi-wallet control, voice-command mode, and adaptive logic modules for seamless portfolio management.",
+    date: "April 23, 2025",
     icon: "🚀",
     color: "from-blue-600/20 to-indigo-700/20",
     status: "planning", // planning, development, beta, completed
@@ -23,8 +26,8 @@ const roadmapItems = [
   },
   {
     title: "Advanced Portfolio Analyzer",
-    description: "Comprehensive asset summary with AI-driven sentiment analysis, risk assessment metrics, and personalized notification system for market movements.",
-    date: "May 23, 2025",
+    description: "In-depth asset summaries, holding patterns, and actionable alerts based on real-time data with AI-driven sentiment analysis and risk assessment metrics.",
+    date: "April 29, 2025",
     icon: "📊",
     color: "from-emerald-600/20 to-teal-700/20",
     status: "planning",
@@ -32,8 +35,8 @@ const roadmapItems = [
   },
   {
     title: "Telegram Command Agent",
-    description: "Secure remote wallet interaction via encrypted Telegram interface with multi-factor authentication and granular permission controls for enterprise security.",
-    date: "May 25, 2025",
+    description: "Control wallet via Telegram with secure prompt-based actions and multi-factor authentication for enterprise security.",
+    date: "May 3, 2025",
     icon: "💬",
     color: "from-sky-600/20 to-blue-700/20",
     status: "planning",
@@ -41,8 +44,8 @@ const roadmapItems = [
   },
   {
     title: "NFT Analyzer Module",
-    description: "Full-spectrum NFT analytics platform featuring holder distribution mapping, volatility risk modeling, and comprehensive metadata classification system.",
-    date: "May 27, 2025",
+    description: "Scan any NFT/token to reveal risk profile, top holders, and contract metadata with comprehensive classification system.",
+    date: "May 7, 2025",
     icon: "🖼️",
     color: "from-fuchsia-600/20 to-purple-700/20",
     status: "concept",
@@ -50,8 +53,8 @@ const roadmapItems = [
   },
   {
     title: "Smart Prompt Builder",
-    description: "Context-aware action suggestion interface with machine learning optimization for complex transaction sequences and natural language processing enhancements.",
-    date: "May 30, 2025",
+    description: "Launchpad UI with one-click pre-built commands for ease of use and machine learning optimization for complex transaction sequences.",
+    date: "May 12, 2025",
     icon: "✨",
     color: "from-amber-600/20 to-orange-700/20",
     status: "concept",
@@ -59,14 +62,25 @@ const roadmapItems = [
   },
   {
     title: "Token Utility Dashboard",
-    description: "Comprehensive token-gated service platform for accessing premium features, institutional-grade analysis tools, and exclusive market insights.",
-    date: "June 1, 2025",
+    description: "View unlockable access tiers, upcoming holder benefits, and real-time token interactions for accessing premium features and institutional-grade analysis tools.",
+    date: "May 21, 2025",
     icon: "🔑",
     color: "from-yellow-600/20 to-amber-700/20",
     status: "concept",
     completion: 0
+  },
+  {
+    title: "V3 Launch",
+    description: "Trading tools, sniper bot integration, and complete App of Inteliq with all tools unified in a seamless ecosystem.",
+    date: "June 10, 2025",
+    icon: "🔮",
+    color: "from-violet-600/20 to-purple-700/20",
+    status: "concept",
+    completion: 0
   }
 ];
+
+// ...existing code...
 
 // Function to get status display information
 const getStatusInfo = (status: string) => {

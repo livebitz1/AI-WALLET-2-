@@ -3,17 +3,17 @@ import { WalletInspector } from "@/lib/wallet-inspector";
 import { WalletDataProvider } from "@/lib/wallet-data-provider";
 
 export async function GET(request: Request) {
-  // Get wallet address from URL params
-  const { searchParams } = new URL(request.url);
-  const walletAddress = searchParams.get("address");
-
-  if (!walletAddress) {
-    return NextResponse.json({ 
-      error: "Missing wallet address parameter" 
-    }, { status: 400 });
-  }
-
   try {
+    // Get wallet address from URL params
+    const { searchParams } = new URL(request.url);
+    const walletAddress = searchParams.get("address");
+
+    if (!walletAddress) {
+      return NextResponse.json({ 
+        error: "Missing wallet address parameter" 
+      }, { status: 400 });
+    }
+
     // Check if this is a diagnostic request
     const diagnostic = searchParams.get("diagnostic") === "true";
     
@@ -37,10 +37,16 @@ export async function GET(request: Request) {
         }))
       });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Wallet check error:", error);
+    
+    // Handle the unknown error type safely
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Unknown error occurred';
+      
     return NextResponse.json({ 
-      error: `Failed to check wallet: ${error.message}` 
+      error: `Failed to check wallet: ${errorMessage}` 
     }, { status: 500 });
   }
 }
@@ -76,10 +82,16 @@ export async function POST(request: Request) {
       tokens: fetchTokens ? tokens : undefined,
       transactions: fetchTransactions ? transactions : undefined
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Wallet check error:", error);
+    
+    // Handle the unknown error type safely
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Unknown error occurred';
+      
     return NextResponse.json({ 
-      error: `Failed to check wallet: ${error.message}` 
+      error: `Failed to check wallet: ${errorMessage}` 
     }, { status: 500 });
   }
 }

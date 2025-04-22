@@ -96,93 +96,99 @@ export async function POST(request: Request) {
           );
           
           // Add memory data to the context
-          contextManager.addMessage({ role: "assistant", content: memoryResponse });
+          const formattedContent = memoryResponse.summary || 
+            `Transaction data: ${memoryResponse.transactions.map(t => 
+              `${t.description || 'Transaction'} (${t.amount || 'amount unknown'})`
+            ).join(', ')}`;
+
+          contextManager.addMessage({ 
+            role: "assistant", 
+            content: formattedContent 
+          });
         }
       } catch (error) {
         console.error("Error processing memory query:", error);
       }
     }
 
-    // Create timeout promise with longer duration (30 seconds)
+    // Fix the Promise callback by making it async and correcting syntax errors
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('AI processing timed out')), 30000);
+      setTimeout(() => {
+        reject(new Error("Request timed out after 30 seconds"));
+      }, 30000);
     });
-    
-    try {
-      // Generate AI context
-      const aiContext = await contextManager.generateAIContext();
-      
-      console.log("AI context generated with SystemPrompt length:", aiContext.systemPrompt.length);
-      
-      // Try using OpenAI with timeout
-      const aiResponsePromise = getAIResponse(prompt, {
-        walletConnected: !!walletConnected,
-        walletAddress: walletAddress || null,
-        balance: currentBalance,
-        tokenBalances: enhancedTokenBalances,
-        recentTransactions: enhancedTransactions,
-        conversationHistory: aiContext.recentMessages.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        })),
-        systemPrompt: aiContext.systemPrompt
-      });
-      
-      // Race between API response and timeout
-      const aiResponse = await Promise.race([aiResponsePromise, timeoutPromise]) as any;
-      
-      console.log("AI response received:", {
-        hasIntent: !!aiResponse.intent,
-        hasSuggestions: !!aiResponse.suggestions,
-        messageLength: aiResponse.message.length
-      });
-      
-      // Add AI response to context
-      contextManager.addMessage({ role: "assistant", content: aiResponse.message });
-      
-      // Include suggested topics if missing
-      if (!aiResponse.suggestions || aiResponse.suggestions.length === 0) {
-        aiResponse.suggestions = aiContext.suggestedTopics;
-      }
-      
-      // Add wallet data to response for UI
-      aiResponse.walletData = aiContext.walletData || {
-        address: walletAddress,
-        solBalance: currentBalance,
-        tokenBalances: enhancedTokenBalances,
-        recentTransactions: enhancedTransactions
-      };
-      
-      return NextResponse.json(aiResponse);
-    } catch (timeoutError) {
-      console.error("AI processing timeout or error:", timeoutError);
-      
-      // Create a fallback response with the wallet data we have
-      const fallbackResponse = {
-        message: "I'm having trouble processing your request right now. In the meantime, I can see your wallet has " +
-          `${currentBalance.toFixed(4)} SOL and ${enhancedTokenBalances.filter(t => t.symbol !== 'SOL').length} other tokens.`,
-        intent: null,
-        suggestions: ["Check my balance", "Show transaction history", "What can you help with?"],
-        walletData: {
-          address: walletAddress,
+
+    // Main function to handle the response
+    const handleResponse = async () => {
+      try {
+        // Generate AI context
+        const aiContext = await contextManager.generateAIContext();
+        
+        console.log("AI context generated with SystemPrompt length:", aiContext.systemPrompt.length);
+        
+        // Try using OpenAI with timeout
+        const aiResponsePromise = getAIResponse(prompt, {
+          walletConnected: !!walletConnected,
+          walletAddress: walletAddress || null,
+          balance: currentBalance,
+          tokenBalances: enhancedTokenBalances,
+          recentTransactions: enhancedTransactions,
+          conversationHistory: aiContext.recentMessages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          })),
+          systemPrompt: aiContext.systemPrompt
+        });
+
+        // Race between API response and timeout
+        const aiResponse = await Promise.race([aiResponsePromise, timeoutPromise]) as any;
+
+        console.log("AI response received:", { 
+          hasIntent: !!aiResponse.intent,
+          hasSuggestions: !!aiResponse.suggestions,
+          messageLength: aiResponse.message.length
+        });
+
+        // Add AI response to context
+        contextManager.addMessage({ role: "assistant", content: aiResponse.message });
+
+        // Include suggested topics if missing
+        if (!aiResponse.suggestions || aiResponse.suggestions.length === 0) {
+          aiResponse.suggestions = aiContext.suggestedTopics;
+        }
+
+        // Add wallet data to response for UI
+        aiResponse.walletData = aiContext.walletData || {
           solBalance: currentBalance,
+          address: walletAddress,
           tokenBalances: enhancedTokenBalances,
           recentTransactions: enhancedTransactions
-        }
-      };
+        };
+
+        return NextResponse.json(aiResponse);
+      } catch (error) {
+        console.error("Error generating response:", error);
+        throw error;
+      }
+    };
+
+    // Use Promise.race with await to ensure correct return type
+    const result = await Promise.race([handleResponse(), timeoutPromise]);
+    
+    return NextResponse.json({
+      result,
+      status: "success"
+    });
+  } catch (error: unknown) {
+    console.error("Error in intent parser:", error);
+    
+    // Handle the unknown error type safely
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Unknown error occurred';
       
-      // Add fallback response to conversation history
-      contextManager.addMessage({ role: "assistant", content: fallbackResponse.message });
-      
-      return NextResponse.json(fallbackResponse);
-    }
-  } catch (error) {
-    console.error("Intent parser error:", error);
     return NextResponse.json(
-      { 
-        message: "I encountered an error processing your request. Please try again.",
-        suggestions: ["Help", "Check my balance"] 
-      },
+      { error: "Failed to process intent", details: errorMessage },
       { status: 500 }
     );
   }

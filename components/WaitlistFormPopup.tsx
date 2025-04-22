@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Copy, Check, X, Sparkles, Battery, Signal, Wifi, Lock, AlertCircle } from "lucide-react";
+import { Copy, Check, X, Sparkles, Battery, Signal, Wifi, Lock, AlertCircle, Twitter as TwitterIcon, User } from "lucide-react";
 
 interface WaitlistFormPopupProps {
   onClose: () => void;
@@ -8,9 +8,13 @@ interface WaitlistFormPopupProps {
 
 // Regex pattern for Solana address validation (base58 format)
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+// Twitter handle validation regex (allows @ prefix, alphanumeric and underscores, up to 15 chars)
+const TWITTER_REGEX = /^@?[a-zA-Z0-9_]{1,15}$/;
 
 export function WaitlistFormPopup({ onClose }: WaitlistFormPopupProps) {
   const [walletAddress, setWalletAddress] = useState("");
+  const [twitter, setTwitter] = useState("");
+  const [username, setUsername] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -21,7 +25,11 @@ export function WaitlistFormPopup({ onClose }: WaitlistFormPopupProps) {
   const [animationStep, setAnimationStep] = useState(0);
 
   const [isValidAddress, setIsValidAddress] = useState<boolean | null>(null);
+  const [isValidTwitter, setIsValidTwitter] = useState<boolean | null>(null);
+  const [isValidUsername, setIsValidUsername] = useState<boolean | null>(null);
   const [addressFocused, setAddressFocused] = useState(false);
+  const [twitterFocused, setTwitterFocused] = useState(false);
+  const [usernameFocused, setUsernameFocused] = useState(false);
 
   useEffect(() => {
     if (isSubmitted) {
@@ -67,12 +75,22 @@ export function WaitlistFormPopup({ onClose }: WaitlistFormPopupProps) {
   // Validate Solana address
   const validateAddress = (address: string): boolean => {
     if (!address.trim()) return false;
-
-    // Check if it matches the Solana address pattern
     return SOLANA_ADDRESS_REGEX.test(address);
   };
 
-  // Update validation when address changes
+  // Validate Twitter handle
+  const validateTwitter = (handle: string): boolean => {
+    if (!handle.trim()) return false;
+    return TWITTER_REGEX.test(handle);
+  };
+
+  // Validate username
+  const validateUsername = (name: string): boolean => {
+    if (!name.trim()) return false;
+    return name.trim().length >= 3;
+  };
+
+  // Update validation when fields change
   useEffect(() => {
     if (walletAddress.trim()) {
       setIsValidAddress(validateAddress(walletAddress));
@@ -81,10 +99,30 @@ export function WaitlistFormPopup({ onClose }: WaitlistFormPopupProps) {
     }
   }, [walletAddress]);
 
+  useEffect(() => {
+    if (twitter.trim()) {
+      setIsValidTwitter(validateTwitter(twitter));
+    } else {
+      setIsValidTwitter(null);
+    }
+  }, [twitter]);
+
+  useEffect(() => {
+    if (username.trim()) {
+      setIsValidUsername(validateUsername(username));
+    } else {
+      setIsValidUsername(null);
+    }
+  }, [username]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Only proceed if the address is valid
-    if (walletAddress.trim().length > 0 && isValidAddress) {
+    // Only proceed if all fields are valid
+    if (
+      walletAddress.trim().length > 0 && isValidAddress &&
+      twitter.trim().length > 0 && isValidTwitter &&
+      username.trim().length > 0 && isValidUsername
+    ) {
       setAnimationStep(1);
       setTimeout(() => setAnimationStep(2), 600);
       setTimeout(() => setAnimationStep(3), 1200);
@@ -214,6 +252,127 @@ export function WaitlistFormPopup({ onClose }: WaitlistFormPopupProps) {
                   </motion.div>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Username field */}
+                  <motion.div 
+                    className="relative"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <div className={`relative border ${
+                      isValidUsername === false && usernameFocused 
+                        ? "border-red-400 ring-1 ring-red-400" 
+                        : isValidUsername === true 
+                          ? "border-green-400 ring-1 ring-green-400/30" 
+                          : "border-border"
+                    } rounded-lg overflow-hidden transition-all`}>
+                      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                        <User size={14} className="text-muted-foreground" />
+                      </div>
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        onFocus={() => setUsernameFocused(true)}
+                        onBlur={() => setUsernameFocused(false)}
+                        placeholder="Username"
+                        className={`w-full pl-9 pr-3 py-2.5 bg-background/50 focus:outline-none transition-all text-sm border-0 ${
+                          isValidUsername === false && usernameFocused ? "placeholder-red-300" : ""
+                        }`}
+                      />
+                    </div>
+                    
+                    <AnimatePresence>
+                      {username.length > 0 && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -5 }}
+                          className={`flex items-center mt-1 text-xs space-x-1 ${
+                            isValidUsername === false && usernameFocused
+                              ? "text-red-400"
+                              : isValidUsername === true
+                                ? "text-green-400" 
+                                : "text-orange-400"
+                          }`}
+                        >
+                          {isValidUsername === false && usernameFocused ? (
+                            <>
+                              <AlertCircle className="h-3 w-3" />
+                              <span>Username must be at least 3 characters</span>
+                            </>
+                          ) : isValidUsername === true ? (
+                            <>
+                              <Check className="h-3 w-3" />
+                              <span>Valid username</span>
+                            </>
+                          ) : null}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+
+                  {/* Twitter handle field */}
+                  <motion.div 
+                    className="relative"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.35 }}
+                  >
+                    <div className={`relative border ${
+                      isValidTwitter === false && twitterFocused 
+                        ? "border-red-400 ring-1 ring-red-400" 
+                        : isValidTwitter === true 
+                          ? "border-green-400 ring-1 ring-green-400/30" 
+                          : "border-border"
+                    } rounded-lg overflow-hidden transition-all`}>
+                      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                        <TwitterIcon size={14} className="text-sky-400" />
+                      </div>
+                      <input
+                        type="text"
+                        value={twitter}
+                        onChange={(e) => setTwitter(e.target.value)}
+                        onFocus={() => setTwitterFocused(true)}
+                        onBlur={() => setTwitterFocused(false)}
+                        placeholder="Twitter handle (e.g. @username)"
+                        className={`w-full pl-9 pr-3 py-2.5 bg-background/50 focus:outline-none transition-all text-sm border-0 ${
+                          isValidTwitter === false && twitterFocused ? "placeholder-red-300" : ""
+                        }`}
+                      />
+                    </div>
+                    
+                    <AnimatePresence>
+                      {twitter.length > 0 && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -5 }}
+                          className={`flex items-center mt-1 text-xs space-x-1 ${
+                            isValidTwitter === false && twitterFocused
+                              ? "text-red-400"
+                              : isValidTwitter === true
+                                ? "text-green-400" 
+                                : "text-orange-400"
+                          }`}
+                        >
+                          {isValidTwitter === false && twitterFocused ? (
+                            <>
+                              <AlertCircle className="h-3 w-3" />
+                              <span>Invalid Twitter handle format</span>
+                            </>
+                          ) : isValidTwitter === true ? (
+                            <>
+                              <Check className="h-3 w-3" />
+                              <span>Valid Twitter handle</span>
+                            </>
+                          ) : null}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+
+                  {/* Existing wallet address field */}
                   <motion.div 
                     className="relative"
                     initial={{ opacity: 0, y: 10 }}
@@ -304,13 +463,15 @@ export function WaitlistFormPopup({ onClose }: WaitlistFormPopupProps) {
 
                   <motion.button
                     type="submit"
-                    disabled={!walletAddress.trim() || animationStep > 0 || isValidAddress === false}
+                    disabled={!walletAddress.trim() || !twitter.trim() || !username.trim() || 
+                      animationStep > 0 || isValidAddress === false || isValidTwitter === false || isValidUsername === false}
                     variants={buttonVariants}
                     initial="idle"
                     whileHover="hover"
                     whileTap="tap"
                     className={`w-full px-4 py-2.5 text-primary-foreground rounded-lg transition-all shadow-lg shadow-primary/20 flex items-center justify-center space-x-2 ${
-                      !walletAddress.trim() || animationStep > 0 || isValidAddress === false 
+                      !walletAddress.trim() || !twitter.trim() || !username.trim() || 
+                      animationStep > 0 || isValidAddress === false || isValidTwitter === false || isValidUsername === false 
                         ? "bg-primary/60 opacity-70 cursor-not-allowed" 
                         : "bg-primary hover:bg-primary/90"
                     }`}
@@ -377,7 +538,7 @@ export function WaitlistFormPopup({ onClose }: WaitlistFormPopupProps) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="p-6 flex flex-col items-center text-center relative overflow-hidden"
-                style={{ height: '360px' }}
+                style={{ height: '380px' }}
               >
                 {particles.map((particle, i) => (
                   <motion.div
@@ -485,6 +646,35 @@ export function WaitlistFormPopup({ onClose }: WaitlistFormPopupProps) {
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-muted-foreground">Estimated time</span>
                       <span className="text-xs">~2 weeks</span>
+                    </div>
+                  </div>
+                </motion.div>
+                <motion.div 
+                  className="w-full bg-background/50 rounded-lg p-3 border border-border/30 mb-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.0 }}
+                >
+                  <div className="grid gap-2 text-left">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <User size={12} /> Username
+                      </span>
+                      <span className="text-xs font-medium truncate max-w-[140px]">{username}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <TwitterIcon size={12} className="text-sky-400" /> Twitter
+                      </span>
+                      <span className="text-xs font-medium truncate max-w-[140px]">
+                        {twitter.startsWith('@') ? twitter : `@${twitter}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-muted-foreground">Wallet</span>
+                      <span className="text-xs font-medium truncate max-w-[140px]">
+                        {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                      </span>
                     </div>
                   </div>
                 </motion.div>
